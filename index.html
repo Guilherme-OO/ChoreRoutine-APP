@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rotinas & Pontos</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#2563eb" />
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --muted:#64748b; --primary:#2563eb; --text:#f8fafc; --accent:#22c55e; --danger:#ef4444; --warning:#f59e0b; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    header{display:flex;align-items:center;gap:12px;padding:20px;border-bottom:1px solid #1f2937}
+    header img{width:40px;height:40px} header h1{margin:0;font-size:1.2rem}
+    header .spacer{flex:1}
+    header .ver{color:#94a3b8;font-size:.85rem}
+    main{padding:20px;max-width:1100px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+    .card h2{margin:0 0 8px;font-size:1.1rem;display:flex;justify-content:space-between;align-items:center}
+    .points{font-weight:700;color:var(--warning)} .row{display:flex;gap:8px;margin-top:10px}
+    input,select{background:#0b1324;color:var(--text);border:1px solid #334155;border-radius:10px;padding:10px;flex:1}
+    button{border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
+    .btn-plus{background:var(--accent);color:#052e16} .btn-minus{background:var(--danger);color:#fff}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid #334155} .btn-primary{background:var(--primary);color:#fff}
+    .section{margin-top:18px} .section h3{margin:0 0 8px;font-size:1rem;color:var(--muted)}
+    .history{max-height:160px;overflow:auto;border:1px dashed #334155;border-radius:10px;padding:10px}
+    .history-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted #1f2937;font-size:.92rem}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:700}
+    .pill.plus{background:#064e3b;color:#34d399} .pill.minus{background:#7f1d1d;color:#fca5a5} .pill.reward{background:#1e3a8a;color:#93c5fd}
+    .avatar{width:56px;height:56px;border-radius:50%;border:2px solid #334155;background:#0b1324;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover} .avatar span{color:#93c5fd;font-weight:800;font-size:1rem}
+    .progress{height:10px;background:#0b1324;border-radius:999px;overflow:hidden;border:1px solid #334155}
+    .bar{height:100%;background:linear-gradient(90deg,#22c55e,#2563eb)} .label{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
+    .feedback{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;padding:10px 18px;border-radius:8px;display:none;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon-96.png" alt="Ícone" />
+    <h1>Rotinas & Pontos <span class="ver">v6</span></h1>
+    <div class="spacer"></div>
+    <button class="btn-outline" onclick="resetApp()">Zerar dados</button>
+  </header>
+  <main>
+    <section class="card"><h2>Adicionar Filho</h2><div class="row"><input id="childName" type="text" placeholder="Nome" /><button class="btn-primary" onclick="addChild()">Adicionar</button></div></section>
+    <section class="card"><h2>Catálogo de Recompensas</h2><div class="row"><input id="rewardTitle" type="text" placeholder="Nome da recompensa" /><input id="rewardCost" type="number" placeholder="Custo em pontos" /><button class="btn-outline" onclick="addReward()">Adicionar recompensa</button></div><div id="rewardsList" class="section"></div></section>
+    <section id="children" class="grid"></section>
+    <footer>Funciona offline. Adicione à tela inicial para usar como app.</footer>
+  </main>
+  <div id="feedback" class="feedback">Recompensa resgatada!</div>
+<script>
+const STORAGE_KEY='pwa_points_state_v6';
+let state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]};
+function load(){try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=JSON.parse(raw)}catch(e){}}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function showFeedback(msg){const fb=document.getElementById('feedback');fb.textContent=msg;fb.style.display='block';setTimeout(()=>fb.style.display='none',2000)}
+function resetApp(){localStorage.removeItem(STORAGE_KEY); if('caches' in window){caches.keys().then(keys=>keys.forEach(k=>{if(k.includes('pwa-cache')) caches.delete(k)}))} state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]}; render(); showFeedback('Dados zerados!')}
+function addChild(){const name=document.getElementById('childName').value.trim();if(!name)return;state.children.push({name,points:0,history:[],photo:null,goals:{weekly:100,monthly:400}});document.getElementById('childName').value='';save();render()}
+function addReward(){const title=document.getElementById('rewardTitle').value.trim();const cost=parseInt(document.getElementById('rewardCost').value,10);if(!title||isNaN(cost)||cost<=0){showFeedback('Preencha recompensa válida');return;}state.rewards.push({title,cost});document.getElementById('rewardTitle').value='';document.getElementById('rewardCost').value='';save();renderRewards();showFeedback('Recompensa adicionada!')}
+function updatePoints(index,delta,desc){const child=state.children[index];child.points+=delta;child.history.unshift({type:delta>=0?'plus':'minus',delta,desc:desc||(delta>=0?'Boa tarefa':'Comportamento'),at:new Date().toISOString()});save();render()}
+function redeemReward(childIndex){
+  const select = document.getElementById(`rewardSel-${childIndex}`);
+  if(!select){ showFeedback('Seleção de recompensa não encontrada'); return; }
+
+  const opt = (select.selectedOptions && select.selectedOptions[0]) || null;
+  if(!opt || opt.disabled || opt.value === ''){ showFeedback('Escolha uma recompensa'); return; }
+
+  let rewardIndex = Number(opt.value);
+  if(Number.isNaN(rewardIndex)){
+    // fallback: compute index from option position (first option is placeholder)
+    const placeholderFirst = select.options[0] && select.options[0].value === '';
+    rewardIndex = opt.index - (placeholderFirst ? 1 : 0);
+  }
+
+  const child = state.children[childIndex];
+  const reward = state.rewards[rewardIndex];
+  if(!child || !reward){ showFeedback('Erro ao resgatar'); return; }
+  if(child.points < reward.cost){ showFeedback('Pontos insuficientes'); return; }
+
+  child.points -= reward.cost;
+  child.history.unshift({ type: 'reward', delta: -reward.cost, desc: `Resgatou: ${reward.title}`, at: new Date().toISOString() });
+  save(); render(); showFeedback('Recompensa resgatada!')
+}
+function formatDate(iso){return new Date(iso).toLocaleString('pt-BR')}
+function startOfWeek(date){const d=new Date(date);const day=d.getDay();const diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d}
+function startOfMonth(date){const d=new Date(date);d.setDate(1);d.setHours(0,0,0,0);return d}
+function periodSum(history,fromDate){
+  const from = fromDate.getTime();
+  let total = 0, plus = 0, minus = 0, rewards = 0;
+  history.forEach(h => {
+    const t = new Date(h.at).getTime();
+    if (t >= from) {
+      total += h.delta;
+      if (h.type === 'plus') plus += h.delta;
+      if (h.type === 'minus') minus += h.delta;
+      // rewards: include reward entries (even if marked reversed) and include reversal entries
+      // this makes the sum net out: reward (negative) + reversal (positive) => 0
+      if (h.type === 'reward') rewards += h.delta;
+      if (h.type === 'reversal') rewards += h.delta;
+    }
+  });
+  return { total, plus, minus, rewards };
+}
+function setPhoto(index,file){const reader=new FileReader();reader.onload=()=>{state.children[index].photo=reader.result;save();render()};reader.readAsDataURL(file)}
+function applyCustom(index){const descEl=document.getElementById(`desc-${index}`);const valEl=document.getElementById(`custom-${index}`);const val=parseInt(valEl.value,10);const desc=(descEl.value||'').trim();if(!val||val===0){showFeedback('Informe pontos válidos');return;} updatePoints(index,val,desc||'Ajuste'); descEl.value=''; valEl.value=''}
+function updateGoals(index){const weekly=parseInt(document.getElementById(`goal-weekly-${index}`).value,10);const monthly=parseInt(document.getElementById(`goal-monthly-${index}`).value,10);if(isNaN(weekly)||isNaN(monthly)){showFeedback('Metas inválidas');return;} state.children[index].goals={weekly,monthly}; save(); render(); showFeedback('Metas atualizadas!')}
+function renderRewards(){const container=document.getElementById('rewardsList');container.innerHTML='<h3>Recompensas</h3>';const list=document.createElement('div');state.rewards.forEach((r,i)=>{const item=document.createElement('div');item.className='history-item';item.innerHTML=`<span>${r.title}</span><span class=\"pill reward\">${r.cost} pts</span>`;list.appendChild(item)});container.appendChild(list)}
+function pct(val,goal){return Math.max(0,Math.min(100,Math.round((goal?(val/goal*100):0))))}
+function renderChildren(){const container=document.getElementById('children');container.innerHTML='';const now=new Date();const wStart=startOfWeek(now);const mStart=startOfMonth(now);state.children.forEach((c,index)=>{const weekly=periodSum(c.history,wStart);const monthly=periodSum(c.history,mStart);const wPct=pct(weekly.total,c.goals.weekly);const mPct=pct(monthly.total,c.goals.monthly);const el=document.createElement('div');el.className='card';const avatar=c.photo?`<div class=\"avatar\"><img src=\"${c.photo}\" alt=\"foto\"/></div>`:`<div class=\"avatar\"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;el.innerHTML=`<div style=\"display:flex;align-items:center;gap:12px;\">${avatar}<div style=\"flex:1\"><h2 style=\"margin:0;display:flex;justify-content:space-between;align-items:center;\"><span>${c.name}</span><span class=\"points\">${c.points} pts</span></h2><div class=\"row\"><input id=\"photo-${index}\" type=\"file\" accept=\"image/*\" style=\"display:none\" /><button class=\"btn-outline\" onclick=\"document.getElementById('photo-${index}').click()\">Foto</button><button class=\"btn-plus\" onclick=\"updatePoints(${index},10,'Boa tarefa')\">+10</button><button class=\"btn-minus\" onclick=\"updatePoints(${index},-5,'Comportamento ruim')\">-5</button></div></div></div><div class=\"row\"><input id=\"desc-${index}\" type=\"text\" placeholder=\"Descrição\" /><input id=\"custom-${index}\" type=\"number\" placeholder=\"Pontos (+/-)\" /><button class=\"btn-outline\" onclick=\"applyCustom(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"rewardSel-${index}\"><option value=\"\" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\\\"${ri}\\\">${r.title} (${r.cost} pts)</option>`).join('')}</select><button class=\"btn-primary\" onclick=\"redeemReward(${index})\">Resgatar</button></div><div class=\"section\"><h3>Metas</h3><div class=\"row\"><input id=\"goal-weekly-${index}\" type=\"number\" value=\"${c.goals.weekly}\" /><input id=\"goal-monthly-${index}\" type=\"number\" value=\"${c.goals.monthly}\" /><button class=\"btn-outline\" onclick=\"updateGoals(${index})\">Salvar metas</button></div><div class=\"label\"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${wPct}%\"></div></div><div class=\"label\" style=\"margin-top:6px\"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${mPct}%\"></div></div></div><div class=\"section\"><h3>Relatório rápido</h3><div class=\"history-item\"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class=\"pill plus\">${weekly.total} pts</span></div><div class=\"history-item\"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class=\"pill reward\">${monthly.total} pts</span></div></div><div class=\"section\"><h3>Histórico</h3><div class=\"history\" id=\"history-${index}\"></div></div>`;container.appendChild(el);const photoInput=el.querySelector(`#photo-${index}`);photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});renderHistory(index)})}
+function undoRedeem(childIndex, historyIndex){
+  const child = state.children[childIndex];
+  if(!child) { showFeedback('Criança não encontrada'); return; }
+  const item = child.history[historyIndex];
+  if(!item) { showFeedback('Entrada não encontrada'); return; }
+  if(item.type !== 'reward'){ showFeedback('Somente resgates podem ser estornados'); return; }
+  if(item.reversed){ showFeedback('Resgate já estornado'); return; }
+
+  const refund = -item.delta;
+  child.points += refund;
+  item.reversed = true;
+  child.history.unshift({ type: 'reversal', delta: refund, desc: `Estorno: ${item.desc}`, at: new Date().toISOString() });
+  save(); render(); showFeedback('Resgate estornado!');
+}
+
+function renderHistory(index){
+  const box = document.getElementById(`history-${index}`);
+  const items = state.children[index].history;
+  box.innerHTML = '';
+  items.forEach((it, hIndex) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    const pillClass = it.type === 'reward' ? 'reward' : (it.type === 'plus' ? 'plus' : (it.type === 'reversal' ? 'plus' : 'minus'));
+    const sign = it.delta > 0 ? '+' : '';
+    let rightHtml = `<span class=\"pill ${pillClass}\">${sign}${it.delta} pts</span>`;
+
+    if(it.type === 'reward'){
+      if(it.reversed){
+        rightHtml += ` <span class=\"pill\" style=\"margin-left:8px;font-weight:600;color:#94a3b8;\">(Estornado)</span>`;
+      } else {
+        rightHtml += ` <button class=\"btn-outline\" onclick=\"undoRedeem(${index},${hIndex})\">Estornar</button>`;
+      }
+    }
+
+    div.innerHTML = `<span>${formatDate(it.at)} — ${it.desc}</span><span>${rightHtml}</span>`;
+    box.appendChild(div);
+  });
+}
+function render(){renderRewards();renderChildren()}
+load();render();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worker.js')}
+</script>
+</body>
+</html>
