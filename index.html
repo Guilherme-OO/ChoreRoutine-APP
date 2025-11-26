@@ -43,6 +43,18 @@
     <button class="btn-outline" onclick="resetApp()">Zerar dados</button>
   </header>
   <main>
+    <div style="max-width:1100px;margin:0 auto 12px;display:flex;gap:8px;align-items:center">
+      <label style="color:var(--muted);font-weight:700">Período:</label>
+      <select id="reportPeriod" onchange="render()">
+        <option value="week">Semana</option>
+        <option value="month" selected>Mês</option>
+        <option value="all">Todo</option>
+        <option value="custom">Personalizado</option>
+      </select>
+      <input id="reportStart" type="datetime-local" style="display:none;max-width:220px" />
+      <input id="reportEnd" type="datetime-local" style="display:none;max-width:220px" />
+      <button id="applyRange" class="btn-outline" style="display:none" onclick="render()">Aplicar</button>
+    </div>
     <section class="card"><h2>Adicionar Filho</h2><div class="row"><input id="childName" type="text" placeholder="Nome" /><button class="btn-primary" onclick="addChild()">Adicionar</button></div></section>
     <section class="card"><h2>Catálogo de Recompensas</h2><div class="row"><input id="rewardTitle" type="text" placeholder="Nome da recompensa" /><input id="rewardCost" type="number" placeholder="Custo em pontos" /><button class="btn-outline" onclick="addReward()">Adicionar recompensa</button></div><div id="rewardsList" class="section"></div></section>
     <section id="children" class="grid"></section>
@@ -58,7 +70,13 @@ function showFeedback(msg){const fb=document.getElementById('feedback');fb.textC
 function resetApp(){localStorage.removeItem(STORAGE_KEY); if('caches' in window){caches.keys().then(keys=>keys.forEach(k=>{if(k.includes('pwa-cache')) caches.delete(k)}))} state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]}; render(); showFeedback('Dados zerados!')}
 function addChild(){const name=document.getElementById('childName').value.trim();if(!name)return;state.children.push({name,points:0,history:[],photo:null,goals:{weekly:100,monthly:400}});document.getElementById('childName').value='';save();render()}
 function addReward(){const title=document.getElementById('rewardTitle').value.trim();const cost=parseInt(document.getElementById('rewardCost').value,10);if(!title||isNaN(cost)||cost<=0){showFeedback('Preencha recompensa válida');return;}state.rewards.push({title,cost});document.getElementById('rewardTitle').value='';document.getElementById('rewardCost').value='';save();renderRewards();showFeedback('Recompensa adicionada!')}
-function updatePoints(index,delta,desc){const child=state.children[index];child.points+=delta;child.history.unshift({type:delta>=0?'plus':'minus',delta,desc:desc||(delta>=0?'Boa tarefa':'Comportamento'),at:new Date().toISOString()});save();render()}
+function updatePoints(index,delta,desc,isoAt){
+  const child = state.children[index];
+  child.points += delta;
+  const at = isoAt ? new Date(isoAt).toISOString() : new Date().toISOString();
+  child.history.unshift({ type: delta>=0 ? 'plus' : 'minus', delta, desc: desc || (delta>=0 ? 'Boa tarefa' : 'Comportamento'), at });
+  save(); render();
+}
 function redeemReward(childIndex){
   const select = document.getElementById(`rewardSel-${childIndex}`);
   if(!select){ showFeedback('Seleção de recompensa não encontrada'); return; }
@@ -73,13 +91,17 @@ function redeemReward(childIndex){
     rewardIndex = opt.index - (placeholderFirst ? 1 : 0);
   }
 
+  const dateEl = document.getElementById(`redeem-date-${childIndex}`);
+  const isoAt = dateEl && dateEl.value ? dateEl.value : null;
+
   const child = state.children[childIndex];
   const reward = state.rewards[rewardIndex];
   if(!child || !reward){ showFeedback('Erro ao resgatar'); return; }
   if(child.points < reward.cost){ showFeedback('Pontos insuficientes'); return; }
 
   child.points -= reward.cost;
-  child.history.unshift({ type: 'reward', delta: -reward.cost, desc: `Resgatou: ${reward.title}`, at: new Date().toISOString() });
+  const at = isoAt ? new Date(isoAt).toISOString() : new Date().toISOString();
+  child.history.unshift({ type: 'reward', delta: -reward.cost, desc: `Resgatou: ${reward.title}`, at });
   save(); render(); showFeedback('Recompensa resgatada!')
 }
 function formatDate(iso){return new Date(iso).toLocaleString('pt-BR')}
@@ -102,12 +124,57 @@ function periodSum(history,fromDate){
   });
   return { total, plus, minus, rewards };
 }
+
+function getReportRange(){
+  const period = document.getElementById('reportPeriod').value;
+  const now = new Date();
+  if(period === 'week'){
+    return { from: startOfWeek(now), to: now };
+  }
+  if(period === 'month'){
+    return { from: startOfMonth(now), to: now };
+  }
+  if(period === 'all'){
+    return { from: new Date(0), to: now };
+  }
+  // custom
+  const s = document.getElementById('reportStart').value;
+  const e = document.getElementById('reportEnd').value;
+  const from = s ? new Date(s) : new Date(0);
+  const to = e ? new Date(e) : now;
+  return { from, to };
+}
+
+// show/hide custom range controls
+document.addEventListener('change', (ev)=>{
+  if(ev.target && ev.target.id === 'reportPeriod'){
+    const v = ev.target.value;
+    const s = document.getElementById('reportStart');
+    const e = document.getElementById('reportEnd');
+    const b = document.getElementById('applyRange');
+    if(v === 'custom'){
+      const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);
+      s.style.display = 'inline-block'; e.style.display = 'inline-block'; b.style.display = 'inline-block';
+      if(!s.value) s.value = nowLocal; if(!e.value) e.value = nowLocal;
+    } else { s.style.display='none'; e.style.display='none'; b.style.display='none'; }
+  }
+});
 function setPhoto(index,file){const reader=new FileReader();reader.onload=()=>{state.children[index].photo=reader.result;save();render()};reader.readAsDataURL(file)}
-function applyCustom(index){const descEl=document.getElementById(`desc-${index}`);const valEl=document.getElementById(`custom-${index}`);const val=parseInt(valEl.value,10);const desc=(descEl.value||'').trim();if(!val||val===0){showFeedback('Informe pontos válidos');return;} updatePoints(index,val,desc||'Ajuste'); descEl.value=''; valEl.value=''}
+function applyCustom(index){
+  const descEl = document.getElementById(`desc-${index}`);
+  const valEl = document.getElementById(`custom-${index}`);
+  const dateEl = document.getElementById(`date-${index}`);
+  const val = parseInt(valEl.value,10);
+  const desc = (descEl.value||'').trim();
+  const isoAt = dateEl && dateEl.value ? dateEl.value : null;
+  if(!val||val===0){ showFeedback('Informe pontos válidos'); return; }
+  updatePoints(index,val,desc||'Ajuste', isoAt);
+  descEl.value=''; valEl.value='';
+}
 function updateGoals(index){const weekly=parseInt(document.getElementById(`goal-weekly-${index}`).value,10);const monthly=parseInt(document.getElementById(`goal-monthly-${index}`).value,10);if(isNaN(weekly)||isNaN(monthly)){showFeedback('Metas inválidas');return;} state.children[index].goals={weekly,monthly}; save(); render(); showFeedback('Metas atualizadas!')}
 function renderRewards(){const container=document.getElementById('rewardsList');container.innerHTML='<h3>Recompensas</h3>';const list=document.createElement('div');state.rewards.forEach((r,i)=>{const item=document.createElement('div');item.className='history-item';item.innerHTML=`<span>${r.title}</span><span class=\"pill reward\">${r.cost} pts</span>`;list.appendChild(item)});container.appendChild(list)}
 function pct(val,goal){return Math.max(0,Math.min(100,Math.round((goal?(val/goal*100):0))))}
-function renderChildren(){const container=document.getElementById('children');container.innerHTML='';const now=new Date();const wStart=startOfWeek(now);const mStart=startOfMonth(now);state.children.forEach((c,index)=>{const weekly=periodSum(c.history,wStart);const monthly=periodSum(c.history,mStart);const wPct=pct(weekly.total,c.goals.weekly);const mPct=pct(monthly.total,c.goals.monthly);const el=document.createElement('div');el.className='card';const avatar=c.photo?`<div class=\"avatar\"><img src=\"${c.photo}\" alt=\"foto\"/></div>`:`<div class=\"avatar\"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;el.innerHTML=`<div style=\"display:flex;align-items:center;gap:12px;\">${avatar}<div style=\"flex:1\"><h2 style=\"margin:0;display:flex;justify-content:space-between;align-items:center;\"><span>${c.name}</span><span class=\"points\">${c.points} pts</span></h2><div class=\"row\"><input id=\"photo-${index}\" type=\"file\" accept=\"image/*\" style=\"display:none\" /><button class=\"btn-outline\" onclick=\"document.getElementById('photo-${index}').click()\">Foto</button><button class=\"btn-plus\" onclick=\"updatePoints(${index},10,'Boa tarefa')\">+10</button><button class=\"btn-minus\" onclick=\"updatePoints(${index},-5,'Comportamento ruim')\">-5</button></div></div></div><div class=\"row\"><input id=\"desc-${index}\" type=\"text\" placeholder=\"Descrição\" /><input id=\"custom-${index}\" type=\"number\" placeholder=\"Pontos (+/-)\" /><button class=\"btn-outline\" onclick=\"applyCustom(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"rewardSel-${index}\"><option value=\"\" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\\\"${ri}\\\">${r.title} (${r.cost} pts)</option>`).join('')}</select><button class=\"btn-primary\" onclick=\"redeemReward(${index})\">Resgatar</button></div><div class=\"section\"><h3>Metas</h3><div class=\"row\"><input id=\"goal-weekly-${index}\" type=\"number\" value=\"${c.goals.weekly}\" /><input id=\"goal-monthly-${index}\" type=\"number\" value=\"${c.goals.monthly}\" /><button class=\"btn-outline\" onclick=\"updateGoals(${index})\">Salvar metas</button></div><div class=\"label\"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${wPct}%\"></div></div><div class=\"label\" style=\"margin-top:6px\"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${mPct}%\"></div></div></div><div class=\"section\"><h3>Relatório rápido</h3><div class=\"history-item\"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class=\"pill plus\">${weekly.total} pts</span></div><div class=\"history-item\"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class=\"pill reward\">${monthly.total} pts</span></div></div><div class=\"section\"><h3>Histórico</h3><div class=\"history\" id=\"history-${index}\"></div></div>`;container.appendChild(el);const photoInput=el.querySelector(`#photo-${index}`);photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});renderHistory(index)})}
+function renderChildren(){const container=document.getElementById('children');container.innerHTML='';const now=new Date();const wStart=startOfWeek(now);const mStart=startOfMonth(now);state.children.forEach((c,index)=>{const weekly=periodSum(c.history,wStart);const monthly=periodSum(c.history,mStart);const wPct=pct(weekly.total,c.goals.weekly);const mPct=pct(monthly.total,c.goals.monthly);const el=document.createElement('div');el.className='card';const avatar=c.photo?`<div class=\"avatar\"><img src=\"${c.photo}\" alt=\"foto\"/></div>`:`<div class=\"avatar\"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);el.innerHTML=`<div style=\"display:flex;align-items:center;gap:12px;\">${avatar}<div style=\"flex:1\"><h2 style=\"margin:0;display:flex;justify-content:space-between;align-items:center;\"><span>${c.name}</span><span class=\"points\">${c.points} pts</span></h2><div class=\"row\"><input id=\"photo-${index}\" type=\"file\" accept=\"image/*\" style=\"display:none\" /><button class=\"btn-outline\" onclick=\"document.getElementById('photo-${index}').click()\">Foto</button><button class=\"btn-plus\" onclick=\"updatePoints(${index},10,'Boa tarefa', document.getElementById('date-${index}').value)\">+10</button><button class=\"btn-minus\" onclick=\"updatePoints(${index},-5,'Comportamento ruim', document.getElementById('date-${index}').value)\">-5</button></div></div></div><div class=\"row\"><input id=\"desc-${index}\" type=\"text\" placeholder=\"Descrição\" /><input id=\"custom-${index}\" type=\"number\" placeholder=\"Pontos (+/-)\" /><input id=\"date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-outline\" onclick=\"applyCustom(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"rewardSel-${index}\"><option value=\"\" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\\\"${ri}\\\">${r.title} (${r.cost} pts)</option>`).join('')}</select><input id=\"redeem-date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-primary\" onclick=\"redeemReward(${index})\">Resgatar</button></div><div class=\"section\"><h3>Metas</h3><div class=\"row\"><input id=\"goal-weekly-${index}\" type=\"number\" value=\"${c.goals.weekly}\" /><input id=\"goal-monthly-${index}\" type=\"number\" value=\"${c.goals.monthly}\" /><button class=\"btn-outline\" onclick=\"updateGoals(${index})\">Salvar metas</button></div><div class=\"label\"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${wPct}%\"></div></div><div class=\"label\" style=\"margin-top:6px\"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${mPct}%\"></div></div></div><div class=\"section\"><h3>Relatório rápido</h3><div class=\"history-item\"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class=\"pill plus\">${weekly.total} pts</span></div><div class=\"history-item\"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class=\"pill reward\">${monthly.total} pts</span></div></div><div class=\"section\"><h3>Histórico</h3><div class=\"history\" id=\"history-${index}\"></div></div>`;container.appendChild(el);const photoInput=el.querySelector(`#photo-${index}`);photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});renderHistory(index, getReportRange())})}
 function undoRedeem(childIndex, historyIndex){
   const child = state.children[childIndex];
   if(!child) { showFeedback('Criança não encontrada'); return; }
@@ -123,11 +190,18 @@ function undoRedeem(childIndex, historyIndex){
   save(); render(); showFeedback('Resgate estornado!');
 }
 
-function renderHistory(index){
+function renderHistory(index, range){
+  if(!range) range = getReportRange();
   const box = document.getElementById(`history-${index}`);
-  const items = state.children[index].history;
+  const itemsAll = state.children[index].history;
   box.innerHTML = '';
-  items.forEach((it, hIndex) => {
+  const from = range.from.getTime();
+  const to = range.to.getTime();
+  const items = itemsAll.filter(h => {
+    const t = new Date(h.at).getTime();
+    return t >= from && t <= to;
+  });
+  items.forEach((it) => {
     const div = document.createElement('div');
     div.className = 'history-item';
     const pillClass = it.type === 'reward' ? 'reward' : (it.type === 'plus' ? 'plus' : (it.type === 'reversal' ? 'plus' : 'minus'));
@@ -138,7 +212,8 @@ function renderHistory(index){
       if(it.reversed){
         rightHtml += ` <span class=\"pill\" style=\"margin-left:8px;font-weight:600;color:#94a3b8;\">(Estornado)</span>`;
       } else {
-        rightHtml += ` <button class=\"btn-outline\" onclick=\"undoRedeem(${index},${hIndex})\">Estornar</button>`;
+        const globalIndex = itemsAll.indexOf(it);
+        rightHtml += ` <button class=\"btn-outline\" onclick=\"undoRedeem(${index},${globalIndex})\">Estornar</button>`;
       }
     }
 
