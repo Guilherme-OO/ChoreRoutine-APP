@@ -55,6 +55,7 @@
   </header>
   <nav>
     <button class="nav-btn active" data-page="home" onclick="goToPage('home')">Home</button>
+    <button class="nav-btn" data-page="kids" onclick="goToPage('kids')">Filhos</button>
     <button class="nav-btn" data-page="rewards" onclick="goToPage('rewards')">Recompensas</button>
     <button class="nav-btn" data-page="activities" onclick="goToPage('activities')">Atividades</button>
     <button class="nav-btn" data-page="goals" onclick="goToPage('goals')">Metas</button>
@@ -62,6 +63,7 @@
   </nav>
   <main>
     <div id="home" class="page active"></div>
+    <div id="kids" class="page"></div>
     <div id="rewards" class="page"></div>
     <div id="activities" class="page"></div>
     <div id="goals" class="page"></div>
@@ -72,7 +74,8 @@
 <script>
 const STORAGE_KEY='pwa_points_state_v6';
 let state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]};
-function load(){try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=JSON.parse(raw)}catch(e){}}
+function load(){try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=JSON.parse(raw)}catch(e){}
+}
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 function showFeedback(msg){const fb=document.getElementById('feedback');fb.textContent=msg;fb.style.display='block';setTimeout(()=>fb.style.display='none',2000)}
 function resetApp(){localStorage.removeItem(STORAGE_KEY); if('caches' in window){caches.keys().then(keys=>keys.forEach(k=>{if(k.includes('pwa-cache')) caches.delete(k)}))} state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]}; render(); showFeedback('Dados zerados!')}
@@ -81,7 +84,8 @@ function addReward(){const title=document.getElementById('rewardTitle').value.tr
 function updatePoints(index,delta,desc,isoAt){
   const child = state.children[index];
   child.points += delta;
-  const at = isoAt ? new Date(isoAt).toISOString() : new Date().toISOString();
+  // store dates as YYYY-MM-DD (no time)
+  const at = isoAt ? isoAt : new Date().toISOString().slice(0,10);
   child.history.unshift({ type: delta>=0 ? 'plus' : 'minus', delta, desc: desc || (delta>=0 ? 'Boa tarefa' : 'Comportamento'), at });
   save(); render();
 }
@@ -108,25 +112,36 @@ function redeemReward(childIndex){
   if(child.points < reward.cost){ showFeedback('Pontos insuficientes'); return; }
 
   child.points -= reward.cost;
-  const at = isoAt ? new Date(isoAt).toISOString() : new Date().toISOString();
+  const at = isoAt ? isoAt : new Date().toISOString().slice(0,10);
   child.history.unshift({ type: 'reward', delta: -reward.cost, desc: `Resgatou: ${reward.title}`, at });
   save(); render(); showFeedback('Recompensa resgatada!')
 }
-function formatDate(iso){return new Date(iso).toLocaleString('pt-BR')}
+function formatDate(at){
+  if(!at) return '';
+  // support both full ISO datetimes and simple YYYY-MM-DD
+  try{
+    if(at.includes('T')){
+      return new Date(at).toLocaleDateString('pt-BR');
+    }
+    return new Date(at + 'T00:00:00').toLocaleDateString('pt-BR');
+  }catch(e){return String(at)}
+}
 function startOfWeek(date){const d=new Date(date);const day=d.getDay();const diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d}
 function startOfMonth(date){const d=new Date(date);d.setDate(1);d.setHours(0,0,0,0);return d}
 function periodSum(history,fromDate){
-  const from = fromDate.getTime();
+  // normalize to local YYYY-MM-DD strings for comparison
+  const pad = n => String(n).padStart(2,'0');
+  const toLocalDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const fromStr = toLocalDate(fromDate);
   let total = 0, plus = 0, minus = 0, rewards = 0;
   history.forEach(h => {
-    const t = new Date(h.at).getTime();
-    if (t >= from) {
+    const hDateStr = (h.at && h.at.includes('T')) ? toLocalDate(new Date(h.at)) : h.at;
+    if(hDateStr >= fromStr){
       total += h.delta;
       if (h.type === 'plus') plus += h.delta;
       if (h.type === 'minus') minus += h.delta;
-      // rewards: include reward entries (even if marked reversed) and include reversal entries
-      // this makes the sum net out: reward (negative) + reversal (positive) => 0
       if (h.type === 'reward') rewards += h.delta;
+      if (h.type === 'activity') total += 0; // activities already counted in total
       if (h.type === 'reversal') rewards += h.delta;
     }
   });
@@ -148,8 +163,8 @@ function getReportRange(){
   // custom
   const s = document.getElementById('reportStart').value;
   const e = document.getElementById('reportEnd').value;
-  const from = s ? new Date(s) : new Date(0);
-  const to = e ? new Date(e) : now;
+  const from = s ? new Date(s + 'T00:00:00') : new Date(0);
+  const to = e ? new Date(e + 'T00:00:00') : now;
   return { from, to };
 }
 
@@ -161,7 +176,7 @@ document.addEventListener('change', (ev)=>{
     const e = document.getElementById('reportEnd');
     const b = document.getElementById('applyRange');
     if(v === 'custom'){
-      const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);
+      const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
       s.style.display = 'inline-block'; e.style.display = 'inline-block'; b.style.display = 'inline-block';
       if(!s.value) s.value = nowLocal; if(!e.value) e.value = nowLocal;
     } else { s.style.display='none'; e.style.display='none'; b.style.display='none'; }
@@ -180,9 +195,30 @@ function applyCustom(index){
   descEl.value=''; valEl.value='';
 }
 function updateGoals(index){const weekly=parseInt(document.getElementById(`goal-weekly-${index}`).value,10);const monthly=parseInt(document.getElementById(`goal-monthly-${index}`).value,10);if(isNaN(weekly)||isNaN(monthly)){showFeedback('Metas inválidas');return;} state.children[index].goals={weekly,monthly}; save(); render(); showFeedback('Metas atualizadas!')}
-function renderRewards(){const container=document.getElementById('rewardsList');container.innerHTML='<h3>Recompensas</h3>';const list=document.createElement('div');state.rewards.forEach((r,i)=>{const item=document.createElement('div');item.className='history-item';item.innerHTML=`<span>${r.title}</span><span class=\"pill reward\">${r.cost} pts</span>`;list.appendChild(item)});container.appendChild(list)}
+function renderRewards(){const container=document.getElementById('rewardsList');container.innerHTML='<h3>Recompensas</h3>';const list=document.createElement('div');state.rewards.forEach((r,i)=>{const item=document.createElement('div');item.className='history-item';item.innerHTML=`<span>${r.title}</span><span class="pill reward">${r.cost} pts</span>`;list.appendChild(item)});container.appendChild(list)}
 function pct(val,goal){return Math.max(0,Math.min(100,Math.round((goal?(val/goal*100):0))))}
-function renderChildren(){const container=document.getElementById('children');container.innerHTML='';const now=new Date();const wStart=startOfWeek(now);const mStart=startOfMonth(now);state.children.forEach((c,index)=>{const weekly=periodSum(c.history,wStart);const monthly=periodSum(c.history,mStart);const wPct=pct(weekly.total,c.goals.weekly);const mPct=pct(monthly.total,c.goals.monthly);const el=document.createElement('div');el.className='card';const avatar=c.photo?`<div class=\"avatar\"><img src=\"${c.photo}\" alt=\"foto\"/></div>`:`<div class=\"avatar\"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);el.innerHTML=`<div style=\"display:flex;align-items:center;gap:12px;\">${avatar}<div style=\"flex:1\"><h2 style=\"margin:0;display:flex;justify-content:space-between;align-items:center;\"><span>${c.name}</span><span class=\"points\">${c.points} pts</span></h2><div class=\"row\"><input id=\"photo-${index}\" type=\"file\" accept=\"image/*\" style=\"display:none\" /><button class=\"btn-outline\" onclick=\"document.getElementById('photo-${index}').click()\">Foto</button><button class=\"btn-plus\" onclick=\"updatePoints(${index},10,'Boa tarefa', document.getElementById('date-${index}').value)\">+10</button><button class=\"btn-minus\" onclick=\"updatePoints(${index},-5,'Comportamento ruim', document.getElementById('date-${index}').value)\">-5</button></div></div></div><div class=\"row\"><input id=\"desc-${index}\" type=\"text\" placeholder=\"Descrição\" /><input id=\"custom-${index}\" type=\"number\" placeholder=\"Pontos (+/-)\" /><input id=\"date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-outline\" onclick=\"applyCustom(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"actSel-${index}\"><option value=\"\" selected disabled>Selecione uma atividade</option>${(state.activities||[]).map((a,ai)=>`<option value=\\\"${ai}\\\">${a.title} (${a.points>=0?'+':''}${a.points} pts)</option>`).join('')}</select><input id=\"act-date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-outline\" onclick=\"applyActivity(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"rewardSel-${index}\"><option value=\"\" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\\\"${ri}\\\">${r.title} (${r.cost} pts)</option>`).join('')}</select><input id=\"redeem-date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-primary\" onclick=\"redeemReward(${index})\">Resgatar</button></div><div class=\"section\"><h3>Metas</h3><div class=\"row\"><input id=\"goal-weekly-${index}\" type=\"number\" value=\"${c.goals.weekly}\" /><input id=\"goal-monthly-${index}\" type=\"number\" value=\"${c.goals.monthly}\" /><button class=\"btn-outline\" onclick=\"updateGoals(${index})\">Salvar metas</button></div><div class=\"label\"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${wPct}%\"></div></div><div class=\"label\" style=\"margin-top:6px\"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${mPct}%\"></div></div></div><div class=\"section\"><h3>Relatório rápido</h3><div class=\"history-item\"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class=\"pill plus\">${weekly.total} pts</span></div><div class=\"history-item\"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class=\"pill reward\">${monthly.total} pts</span></div></div><div class=\"section\"><h3>Histórico</h3><div class=\"history\" id=\"history-${index}\"></div></div>`;container.appendChild(el);const photoInput=el.querySelector(`#photo-${index}`);photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});renderHistory(index, getReportRange())})}
+function renderChildren(){
+  const container=document.getElementById('children');
+  container.innerHTML='';
+  const now=new Date();
+  const wStart=startOfWeek(now);
+  const mStart=startOfMonth(now);
+  state.children.forEach((c,index)=>{
+    const weekly=periodSum(c.history,wStart);
+    const monthly=periodSum(c.history,mStart);
+    const wPct=pct(weekly.total,c.goals.weekly);
+    const mPct=pct(monthly.total,c.goals.monthly);
+    const el=document.createElement('div');
+    el.className='card';
+    const avatar=c.photo?`<div class="avatar"><img src="${c.photo}" alt="foto"/></div>`:`<div class="avatar"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;
+    const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;">${avatar}<div style="flex:1"><h2 style="margin:0;display:flex;justify-content:space-between;align-items:center;"><span>${c.name}</span><span class="points">${c.points} pts</span></h2><div class="row"><input id="photo-${index}" type="file" accept="image/*" style="display:none" /><button class="btn-outline" onclick="document.getElementById('photo-${index}').click()">Foto</button><button class="btn-plus" onclick="updatePoints(${index},10,'Boa tarefa', document.getElementById('date-${index}').value)">+10</button><button class="btn-minus" onclick="updatePoints(${index},-5,'Comportamento ruim', document.getElementById('date-${index}').value)">-5</button></div></div></div><div class="row"><input id="desc-${index}" type="text" placeholder="Descrição" /><input id="custom-${index}" type="number" placeholder="Pontos (+/-)" /><input id="date-${index}" type="date" value="${nowLocal}" style="max-width:220px" /><button class="btn-outline" onclick="applyCustom(${index})">Aplicar</button></div><div class="row"><select id="actSel-${index}"><option value="" selected disabled>Selecione uma atividade</option>${(state.activities||[]).map((a,ai)=>`<option value=\"${ai}\">${a.title} (${a.points>=0?'+':''}${a.points} pts)</option>`).join('')}</select><input id="act-date-${index}" type="date" value="${nowLocal}" style="max-width:220px" /><button class="btn-outline" onclick="applyActivity(${index})">Aplicar</button></div><div class="row"><select id="rewardSel-${index}"><option value="" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\"${ri}\">${r.title} (${r.cost} pts)</option>`).join('')}</select><input id="redeem-date-${index}" type="date" value="${nowLocal}" style="max-width:220px" /><button class="btn-primary" onclick="redeemReward(${index})">Resgatar</button></div><div class="section"><h3>Metas</h3><div class="row"><input id="goal-weekly-${index}" type="number" value="${c.goals.weekly}" /><input id="goal-monthly-${index}" type="number" value="${c.goals.monthly}" /><button class="btn-outline" onclick="updateGoals(${index})">Salvar metas</button></div><div class="label"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class="progress"><div class="bar" style="width:${wPct}%"></div></div><div class="label" style="margin-top:6px"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class="progress"><div class="bar" style="width:${mPct}%"></div></div></div><div class="section"><h3>Relatório rápido</h3><div class="history-item"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class="pill plus">${weekly.total} pts</span></div><div class="history-item"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class="pill reward">${monthly.total} pts</span></div></div><div class="section"><h3>Histórico</h3><div class="history" id="history-${index}"></div></div>`;
+    container.appendChild(el);
+    const photoInput=el.querySelector(`#photo-${index}`);
+    photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});
+    renderHistory(index, getReportRange());
+  });
+}
 function undoRedeem(childIndex, historyIndex){
   const child = state.children[childIndex];
   if(!child) { showFeedback('Criança não encontrada'); return; }
@@ -194,8 +230,25 @@ function undoRedeem(childIndex, historyIndex){
   const refund = -item.delta;
   child.points += refund;
   item.reversed = true;
-  child.history.unshift({ type: 'reversal', delta: refund, desc: `Estorno: ${item.desc}`, at: new Date().toISOString() });
+  child.history.unshift({ type: 'reversal', delta: refund, desc: `Estorno: ${item.desc}`, at: new Date().toISOString().slice(0,10) });
   save(); render(); showFeedback('Resgate estornado!');
+}
+
+function undoActivity(childIndex, historyIndex){
+  const child = state.children[childIndex];
+  if(!child) { showFeedback('Criança não encontrada'); return; }
+  const item = child.history[historyIndex];
+  if(!item) { showFeedback('Entrada não encontrada'); return; }
+  // Support both new 'activity' type and legacy 'plus'/'minus' entries marked as activities
+  const isActivity = item.type === 'activity' || ((item.type === 'plus' || item.type === 'minus') && item.desc && (item.desc.includes('Atividade:') || item.desc.includes('Desconto:')));
+  if(!isActivity){ showFeedback('Somente atividades podem ser estornadas'); return; }
+  if(item.reversed){ showFeedback('Atividade já estornada'); return; }
+
+  const refund = -item.delta;
+  child.points += refund;
+  item.reversed = true;
+  child.history.unshift({ type: 'reversal', delta: refund, desc: `Estorno: ${item.desc}`, at: new Date().toISOString().slice(0,10) });
+  save(); render(); showFeedback('Atividade estornada!');
 }
 
 function renderHistory(index, range){
@@ -203,16 +256,37 @@ function renderHistory(index, range){
   const box = document.getElementById(`history-${index}`);
   const itemsAll = state.children[index].history;
   box.innerHTML = '';
-  const from = range.from.getTime();
-  const to = range.to.getTime();
+  const pad = n => String(n).padStart(2,'0');
+  const toLocalDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const fromStr = toLocalDate(range.from);
+  const toStr = toLocalDate(range.to);
   const items = itemsAll.filter(h => {
-    const t = new Date(h.at).getTime();
-    return t >= from && t <= to;
+    let hDateStr = '';
+    if(!h || !h.at) return false;
+    if(h.at.includes('T')){
+      hDateStr = toLocalDate(new Date(h.at));
+    } else if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(h.at)){
+      hDateStr = h.at;
+    } else if(h.at.includes('/')){
+      // assume DD/MM/YYYY -> convert
+      const parts = h.at.split('/');
+      if(parts.length===3){ hDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
+    } else {
+      // fallback: try Date parse
+      try{ hDateStr = toLocalDate(new Date(h.at)); }catch(e){ hDateStr = h.at }
+    }
+    return hDateStr >= fromStr && hDateStr <= toStr;
   });
   items.forEach((it) => {
     const div = document.createElement('div');
     div.className = 'history-item';
-    const pillClass = it.type === 'reward' ? 'reward' : (it.type === 'plus' ? 'plus' : (it.type === 'reversal' ? 'plus' : 'minus'));
+    // Determine pill class: for 'activity' type, use delta value; for others use type
+    let pillClass = 'minus';
+    if(it.type === 'reward') pillClass = 'reward';
+    else if(it.type === 'plus') pillClass = 'plus';
+    else if(it.type === 'reversal') pillClass = 'plus';
+    else if(it.type === 'activity') pillClass = it.delta >= 0 ? 'plus' : 'minus';
+    
     const sign = it.delta > 0 ? '+' : '';
     let rightHtml = `<span class=\"pill ${pillClass}\">${sign}${it.delta} pts</span>`;
 
@@ -222,6 +296,13 @@ function renderHistory(index, range){
       } else {
         const globalIndex = itemsAll.indexOf(it);
         rightHtml += ` <button class=\"btn-outline\" onclick=\"undoRedeem(${index},${globalIndex})\">Estornar</button>`;
+      }
+    } else if(it.type === 'activity' || (it.type === 'plus' && it.desc && (it.desc.includes('Atividade:') || it.desc.includes('Desconto:'))) || (it.type === 'minus' && it.desc && (it.desc.includes('Atividade:') || it.desc.includes('Desconto:')))){
+      if(it.reversed){
+        rightHtml += ` <span class=\"pill\" style=\"margin-left:8px;font-weight:600;color:#94a3b8;\">(Estornado)</span>`;
+      } else {
+        const globalIndex = itemsAll.indexOf(it);
+        rightHtml += ` <button class=\"btn-outline\" onclick=\"undoActivity(${index},${globalIndex})\">Estornar</button>`;
       }
     }
 
@@ -236,6 +317,7 @@ function goToPage(page){
   document.getElementById(page).classList.add('active');
   document.querySelector(`[data-page="${page}"]`).classList.add('active');
   if(page==='home') renderHome();
+  else if(page==='kids') renderKidsPage();
   else if(page==='rewards') renderRewardsPage();
   else if(page==='activities') renderActivitiesPage();
   else if(page==='goals') renderGoalsPage();
@@ -244,7 +326,7 @@ function goToPage(page){
 
 function renderHome(){
   const container=document.getElementById('home');
-  const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);
+  const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
   container.innerHTML=`
     <div style="max-width:1100px;margin:0 auto 12px;display:flex;gap:8px;align-items:center">
       <label style="color:var(--muted);font-weight:700">Período:</label>
@@ -254,11 +336,10 @@ function renderHome(){
         <option value="all">Todo</option>
         <option value="custom">Personalizado</option>
       </select>
-      <input id="reportStart" type="datetime-local" style="display:none;max-width:220px" />
-      <input id="reportEnd" type="datetime-local" style="display:none;max-width:220px" />
+      <input id="reportStart" type="date" style="display:none;max-width:220px" />
+      <input id="reportEnd" type="date" style="display:none;max-width:220px" />
       <button id="applyRange" class="btn-outline" style="display:none" onclick="renderHome()">Aplicar</button>
     </div>
-    <section class="card"><h2>Adicionar Filho</h2><div class="row"><input id="childName" type="text" placeholder="Nome" /><button class="btn-primary" onclick="addChild()">Adicionar</button></div></section>
     <section id="children" class="grid"></section>
   `;
   renderChildren();
@@ -267,8 +348,8 @@ function renderHome(){
     const s=document.getElementById('reportStart');
     const e=document.getElementById('reportEnd');
     const b=document.getElementById('applyRange');
-    if(v==='custom'){
-      const nl=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);
+      if(v==='custom'){
+      const nl=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
       s.style.display='inline-block';e.style.display='inline-block';b.style.display='inline-block';
       if(!s.value)s.value=nl;if(!e.value)e.value=nl;
     }else{s.style.display='none';e.style.display='none';b.style.display='none';}
@@ -319,6 +400,57 @@ function addReward(){
   save();
   renderRewardsPage();
   showFeedback('Recompensa adicionada!');
+}
+
+function renderKidsPage(){
+  const container = document.getElementById('kids');
+  container.innerHTML = `
+    <div class="card">
+      <h2>Cadastro de Filhos</h2>
+      <div class="row">
+        <input id="kidName" type="text" placeholder="Nome" />
+        <input id="kidPoints" type="number" placeholder="Pontos iniciais (opcional)" />
+      </div>
+      <div class="row">
+        <input id="kidGoalWeekly" type="number" placeholder="Meta semanal (pts)" />
+        <input id="kidGoalMonthly" type="number" placeholder="Meta mensal (pts)" />
+        <button class="btn-primary" onclick="createChildFromForm()">Criar</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Nome</th><th>Pontos</th><th>Meta S/ M</th><th>Ação</th></tr></thead>
+      <tbody id="kidsTable"></tbody>
+    </table>
+  `;
+  const tbody = document.getElementById('kidsTable');
+  tbody.innerHTML = '';
+  state.children.forEach((c, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.name}</td><td class="points">${c.points} pts</td><td>${c.goals.weekly} / ${c.goals.monthly}</td><td><button class="btn-danger" onclick="deleteChild(${i})">Remover</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function createChildFromForm(){
+  const name = document.getElementById('kidName').value.trim();
+  const pts = parseInt(document.getElementById('kidPoints').value,10);
+  const weekly = parseInt(document.getElementById('kidGoalWeekly').value,10);
+  const monthly = parseInt(document.getElementById('kidGoalMonthly').value,10);
+  if(!name){ showFeedback('Informe um nome'); return; }
+  const child = { name, points: isNaN(pts)?0:pts, history:[], photo:null, goals: { weekly: isNaN(weekly)?100:weekly, monthly: isNaN(monthly)?400:monthly } };
+  state.children.push(child);
+  document.getElementById('kidName').value=''; document.getElementById('kidPoints').value=''; document.getElementById('kidGoalWeekly').value=''; document.getElementById('kidGoalMonthly').value='';
+  save(); renderKidsPage(); showFeedback('Filho criado!');
+}
+
+function deleteChild(index){
+  if(!state.children[index]) return; 
+  if(confirm(`Remover criança "${state.children[index].name}"?`)){
+    state.children.splice(index,1);
+    save();
+    renderKidsPage();
+    showFeedback('Filho removido!');
+  }
 }
 
 function renderActivitiesPage(){
@@ -386,8 +518,12 @@ function applyActivity(childIndex){
   const child=state.children[childIndex];
   const activity=state.activities[actIndex];
   if(!child||!activity){showFeedback('Erro ao aplicar atividade');return;}
-  const desc=activity.points>=0?`Atividade: ${activity.title}`:`Desconto: ${activity.title}`;
-  updatePoints(childIndex,activity.points,desc,isoAt);
+  
+  child.points += activity.points;
+  const at = isoAt ? isoAt : new Date().toISOString().slice(0,10);
+  const desc = activity.points >= 0 ? `Atividade: ${activity.title}` : `Desconto: ${activity.title}`;
+  child.history.unshift({ type: 'activity', delta: activity.points, desc: desc, at });
+  save(); render();
   select.value='';
   showFeedback('Atividade aplicada!');
 }
@@ -426,53 +562,90 @@ function saveGoals(index){
 }
 
 function renderReportPage(){
+  // preserve previous selections so switching child doesn't reset dates
+  const prevChild = document.getElementById('reportChild')?.value || '';
+  const prevStart = document.getElementById('reportStart')?.value || '';
+  const prevEnd = document.getElementById('reportEnd')?.value || '';
   const container=document.getElementById('report');
   container.innerHTML=`
     <div class="card">
       <h2>Filtro de Relatório</h2>
       <div class="row">
-        <select id="reportChild" onchange="renderReportPage()">
-          <option value="">Todas as crianças</option>${state.children.map((c,i)=>`<option value="${i}">${c.name}</option>`).join('')}
-        </select>
-        <select id="reportPeriodSel" onchange="renderReportPage()">
-          <option value="week">Semana</option>
-          <option value="month" selected>Mês</option>
-          <option value="all">Todo</option>
-        </select>
+        <select id="reportChild"></select>
+        <input id="reportStart" type="date" style="max-width:240px" />
+        <input id="reportEnd" type="date" style="max-width:240px" />
+        <button id="applyReport" class="btn-outline">Aplicar filtro</button>
       </div>
     </div>
     <div id="reportTable"></div>
   `;
-  const childSel=document.getElementById('reportChild');
-  const childIdx=childSel?childSel.value:'';
-  const period=document.getElementById('reportPeriodSel').value;
-  const now=new Date();
-  let fromDate=period==='week'?startOfWeek(now):(period==='month'?startOfMonth(now):new Date(0));
-  let html='<table><thead><tr><th>Criança</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Pontos</th></tr></thead><tbody>';
-  if(childIdx===''){
-    state.children.forEach((c,ci)=>{
-      c.history.forEach(h=>{
-        const t=new Date(h.at).getTime();
-        if(t>=fromDate.getTime()){
-          const type=h.type===('plus')?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
-          html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
-        }
+  // preencher seletor de crianças de forma programática (mais robusto)
+  const childSel = document.getElementById('reportChild');
+  childSel.innerHTML = '<option value="">Todas as crianças</option>';
+  state.children.forEach((c,i)=>{
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = c.name;
+    if(String(i) === prevChild) opt.selected = true;
+    childSel.appendChild(opt);
+  });
+  const startEl = document.getElementById('reportStart');
+  const endEl = document.getElementById('reportEnd');
+  // set defaults: last 30 days (but preserve previous values if present)
+  const now = new Date();
+  const defaultStart = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30);
+  const toLocal = (d)=>new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  if(prevStart) startEl.value = prevStart; else startEl.value = toLocal(defaultStart);
+  if(prevEnd) endEl.value = prevEnd; else endEl.value = toLocal(now);
+
+  // build table when user clicks Aplicar
+  function buildReportTable(){
+    const childIdx = childSel.value;
+    const fromStr = startEl.value || toLocal(defaultStart);
+    const toStr = endEl.value || toLocal(now);
+    const pad = n => String(n).padStart(2,'0');
+    const toLocalDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    let html='<table><thead><tr><th>Criança</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Pontos</th></tr></thead><tbody>';
+    if(childIdx===''){
+      state.children.forEach((c,ci)=>{
+        c.history.forEach(h=>{
+          let hDateStr='';
+          if(!h || !h.at) return;
+          if(h.at.includes('T')) hDateStr = toLocalDate(new Date(h.at));
+          else if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(h.at)) hDateStr = h.at;
+          else if(h.at.includes('/')){ const parts=h.at.split('/'); if(parts.length===3) hDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
+          else try{ hDateStr = toLocalDate(new Date(h.at)); }catch(e){ hDateStr = h.at }
+          if(hDateStr>=fromStr && hDateStr<=toStr){
+            const type=h.type===('plus')?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
+            html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
+          }
+        });
       });
-    });
-  }else{
-    const c=state.children[parseInt(childIdx,10)];
-    if(c){
-      c.history.forEach(h=>{
-        const t=new Date(h.at).getTime();
-        if(t>=fromDate.getTime()){
-          const type=h.type==='plus'?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
-          html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
-        }
-      });
+    }else{
+      const c=state.children[parseInt(childIdx,10)];
+      if(c){
+        c.history.forEach(h=>{
+          let hDateStr='';
+          if(!h || !h.at) return;
+          if(h.at.includes('T')) hDateStr = toLocalDate(new Date(h.at));
+          else if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(h.at)) hDateStr = h.at;
+          else if(h.at.includes('/')){ const parts=h.at.split('/'); if(parts.length===3) hDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
+          else try{ hDateStr = toLocalDate(new Date(h.at)); }catch(e){ hDateStr = h.at }
+          if(hDateStr>=fromStr && hDateStr<=toStr){
+            const type=h.type==='plus'?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
+            html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
+          }
+        });
+      }
     }
+    html+='</tbody></table>';
+    document.getElementById('reportTable').innerHTML=html;
   }
-  html+='</tbody></table>';
-  document.getElementById('reportTable').innerHTML=html;
+
+  // wire apply button
+  document.getElementById('applyReport').addEventListener('click', buildReportTable);
+  // do initial build
+  buildReportTable();
 }
 
 function render(){goToPage('home');}
