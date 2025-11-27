@@ -14,7 +14,13 @@
     header img{width:40px;height:40px} header h1{margin:0;font-size:1.2rem}
     header .spacer{flex:1}
     header .ver{color:#94a3b8;font-size:.85rem}
+    nav{display:flex;gap:0;border-bottom:1px solid #1f2937;background:#0b1324;overflow-x:auto}
+    nav button{background:transparent;color:var(--text);border:none;border-bottom:3px solid transparent;border-radius:0;padding:12px 20px;cursor:pointer;white-space:nowrap;transition:all .2s}
+    nav button:hover{color:var(--primary)}
+    nav button.active{border-bottom-color:var(--primary);color:var(--primary)}
     main{padding:20px;max-width:1100px;margin:0 auto}
+    .page{display:none}
+    .page.active{display:block}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
     .card{background:var(--card);border:1px solid #1f2937;border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
     .card h2{margin:0 0 8px;font-size:1.1rem;display:flex;justify-content:space-between;align-items:center}
@@ -23,6 +29,7 @@
     button{border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
     .btn-plus{background:var(--accent);color:#052e16} .btn-minus{background:var(--danger);color:#fff}
     .btn-outline{background:transparent;color:var(--text);border:1px solid #334155} .btn-primary{background:var(--primary);color:#fff}
+    .btn-danger{background:var(--danger);color:#fff}
     .section{margin-top:18px} .section h3{margin:0 0 8px;font-size:1rem;color:var(--muted)}
     .history{max-height:160px;overflow:auto;border:1px dashed #334155;border-radius:10px;padding:10px}
     .history-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted #1f2937;font-size:.92rem}
@@ -33,31 +40,32 @@
     .progress{height:10px;background:#0b1324;border-radius:999px;overflow:hidden;border:1px solid #334155}
     .bar{height:100%;background:linear-gradient(90deg,#22c55e,#2563eb)} .label{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
     .feedback{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;padding:10px 18px;border-radius:8px;display:none;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    table thead{background:#0b1324}
+    table th,table td{padding:10px;text-align:left;border-bottom:1px solid #1f2937}
+    table button{padding:6px 10px;font-size:.85rem}
   </style>
 </head>
 <body>
   <header>
     <img src="icons/icon-96.png" alt="Ícone" />
-    <h1>Rotinas & Pontos <span class="ver">v6</span></h1>
+    <h1>Rotinas & Pontos <span class="ver">v7</span></h1>
     <div class="spacer"></div>
     <button class="btn-outline" onclick="resetApp()">Zerar dados</button>
   </header>
+  <nav>
+    <button class="nav-btn active" data-page="home" onclick="goToPage('home')">Home</button>
+    <button class="nav-btn" data-page="rewards" onclick="goToPage('rewards')">Recompensas</button>
+    <button class="nav-btn" data-page="activities" onclick="goToPage('activities')">Atividades</button>
+    <button class="nav-btn" data-page="goals" onclick="goToPage('goals')">Metas</button>
+    <button class="nav-btn" data-page="report" onclick="goToPage('report')">Relatório</button>
+  </nav>
   <main>
-    <div style="max-width:1100px;margin:0 auto 12px;display:flex;gap:8px;align-items:center">
-      <label style="color:var(--muted);font-weight:700">Período:</label>
-      <select id="reportPeriod" onchange="render()">
-        <option value="week">Semana</option>
-        <option value="month" selected>Mês</option>
-        <option value="all">Todo</option>
-        <option value="custom">Personalizado</option>
-      </select>
-      <input id="reportStart" type="datetime-local" style="display:none;max-width:220px" />
-      <input id="reportEnd" type="datetime-local" style="display:none;max-width:220px" />
-      <button id="applyRange" class="btn-outline" style="display:none" onclick="render()">Aplicar</button>
-    </div>
-    <section class="card"><h2>Adicionar Filho</h2><div class="row"><input id="childName" type="text" placeholder="Nome" /><button class="btn-primary" onclick="addChild()">Adicionar</button></div></section>
-    <section class="card"><h2>Catálogo de Recompensas</h2><div class="row"><input id="rewardTitle" type="text" placeholder="Nome da recompensa" /><input id="rewardCost" type="number" placeholder="Custo em pontos" /><button class="btn-outline" onclick="addReward()">Adicionar recompensa</button></div><div id="rewardsList" class="section"></div></section>
-    <section id="children" class="grid"></section>
+    <div id="home" class="page active"></div>
+    <div id="rewards" class="page"></div>
+    <div id="activities" class="page"></div>
+    <div id="goals" class="page"></div>
+    <div id="report" class="page"></div>
     <footer>Funciona offline. Adicione à tela inicial para usar como app.</footer>
   </main>
   <div id="feedback" class="feedback">Recompensa resgatada!</div>
@@ -174,7 +182,7 @@ function applyCustom(index){
 function updateGoals(index){const weekly=parseInt(document.getElementById(`goal-weekly-${index}`).value,10);const monthly=parseInt(document.getElementById(`goal-monthly-${index}`).value,10);if(isNaN(weekly)||isNaN(monthly)){showFeedback('Metas inválidas');return;} state.children[index].goals={weekly,monthly}; save(); render(); showFeedback('Metas atualizadas!')}
 function renderRewards(){const container=document.getElementById('rewardsList');container.innerHTML='<h3>Recompensas</h3>';const list=document.createElement('div');state.rewards.forEach((r,i)=>{const item=document.createElement('div');item.className='history-item';item.innerHTML=`<span>${r.title}</span><span class=\"pill reward\">${r.cost} pts</span>`;list.appendChild(item)});container.appendChild(list)}
 function pct(val,goal){return Math.max(0,Math.min(100,Math.round((goal?(val/goal*100):0))))}
-function renderChildren(){const container=document.getElementById('children');container.innerHTML='';const now=new Date();const wStart=startOfWeek(now);const mStart=startOfMonth(now);state.children.forEach((c,index)=>{const weekly=periodSum(c.history,wStart);const monthly=periodSum(c.history,mStart);const wPct=pct(weekly.total,c.goals.weekly);const mPct=pct(monthly.total,c.goals.monthly);const el=document.createElement('div');el.className='card';const avatar=c.photo?`<div class=\"avatar\"><img src=\"${c.photo}\" alt=\"foto\"/></div>`:`<div class=\"avatar\"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);el.innerHTML=`<div style=\"display:flex;align-items:center;gap:12px;\">${avatar}<div style=\"flex:1\"><h2 style=\"margin:0;display:flex;justify-content:space-between;align-items:center;\"><span>${c.name}</span><span class=\"points\">${c.points} pts</span></h2><div class=\"row\"><input id=\"photo-${index}\" type=\"file\" accept=\"image/*\" style=\"display:none\" /><button class=\"btn-outline\" onclick=\"document.getElementById('photo-${index}').click()\">Foto</button><button class=\"btn-plus\" onclick=\"updatePoints(${index},10,'Boa tarefa', document.getElementById('date-${index}').value)\">+10</button><button class=\"btn-minus\" onclick=\"updatePoints(${index},-5,'Comportamento ruim', document.getElementById('date-${index}').value)\">-5</button></div></div></div><div class=\"row\"><input id=\"desc-${index}\" type=\"text\" placeholder=\"Descrição\" /><input id=\"custom-${index}\" type=\"number\" placeholder=\"Pontos (+/-)\" /><input id=\"date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-outline\" onclick=\"applyCustom(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"rewardSel-${index}\"><option value=\"\" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\\\"${ri}\\\">${r.title} (${r.cost} pts)</option>`).join('')}</select><input id=\"redeem-date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-primary\" onclick=\"redeemReward(${index})\">Resgatar</button></div><div class=\"section\"><h3>Metas</h3><div class=\"row\"><input id=\"goal-weekly-${index}\" type=\"number\" value=\"${c.goals.weekly}\" /><input id=\"goal-monthly-${index}\" type=\"number\" value=\"${c.goals.monthly}\" /><button class=\"btn-outline\" onclick=\"updateGoals(${index})\">Salvar metas</button></div><div class=\"label\"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${wPct}%\"></div></div><div class=\"label\" style=\"margin-top:6px\"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${mPct}%\"></div></div></div><div class=\"section\"><h3>Relatório rápido</h3><div class=\"history-item\"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class=\"pill plus\">${weekly.total} pts</span></div><div class=\"history-item\"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class=\"pill reward\">${monthly.total} pts</span></div></div><div class=\"section\"><h3>Histórico</h3><div class=\"history\" id=\"history-${index}\"></div></div>`;container.appendChild(el);const photoInput=el.querySelector(`#photo-${index}`);photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});renderHistory(index, getReportRange())})}
+function renderChildren(){const container=document.getElementById('children');container.innerHTML='';const now=new Date();const wStart=startOfWeek(now);const mStart=startOfMonth(now);state.children.forEach((c,index)=>{const weekly=periodSum(c.history,wStart);const monthly=periodSum(c.history,mStart);const wPct=pct(weekly.total,c.goals.weekly);const mPct=pct(monthly.total,c.goals.monthly);const el=document.createElement('div');el.className='card';const avatar=c.photo?`<div class=\"avatar\"><img src=\"${c.photo}\" alt=\"foto\"/></div>`:`<div class=\"avatar\"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);el.innerHTML=`<div style=\"display:flex;align-items:center;gap:12px;\">${avatar}<div style=\"flex:1\"><h2 style=\"margin:0;display:flex;justify-content:space-between;align-items:center;\"><span>${c.name}</span><span class=\"points\">${c.points} pts</span></h2><div class=\"row\"><input id=\"photo-${index}\" type=\"file\" accept=\"image/*\" style=\"display:none\" /><button class=\"btn-outline\" onclick=\"document.getElementById('photo-${index}').click()\">Foto</button><button class=\"btn-plus\" onclick=\"updatePoints(${index},10,'Boa tarefa', document.getElementById('date-${index}').value)\">+10</button><button class=\"btn-minus\" onclick=\"updatePoints(${index},-5,'Comportamento ruim', document.getElementById('date-${index}').value)\">-5</button></div></div></div><div class=\"row\"><input id=\"desc-${index}\" type=\"text\" placeholder=\"Descrição\" /><input id=\"custom-${index}\" type=\"number\" placeholder=\"Pontos (+/-)\" /><input id=\"date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-outline\" onclick=\"applyCustom(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"actSel-${index}\"><option value=\"\" selected disabled>Selecione uma atividade</option>${(state.activities||[]).map((a,ai)=>`<option value=\\\"${ai}\\\">${a.title} (${a.points>=0?'+':''}${a.points} pts)</option>`).join('')}</select><input id=\"act-date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-outline\" onclick=\"applyActivity(${index})\">Aplicar</button></div><div class=\"row\"><select id=\"rewardSel-${index}\"><option value=\"\" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\\\"${ri}\\\">${r.title} (${r.cost} pts)</option>`).join('')}</select><input id=\"redeem-date-${index}\" type=\"datetime-local\" value=\"${nowLocal}\" style=\"max-width:220px\" /><button class=\"btn-primary\" onclick=\"redeemReward(${index})\">Resgatar</button></div><div class=\"section\"><h3>Metas</h3><div class=\"row\"><input id=\"goal-weekly-${index}\" type=\"number\" value=\"${c.goals.weekly}\" /><input id=\"goal-monthly-${index}\" type=\"number\" value=\"${c.goals.monthly}\" /><button class=\"btn-outline\" onclick=\"updateGoals(${index})\">Salvar metas</button></div><div class=\"label\"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${wPct}%\"></div></div><div class=\"label\" style=\"margin-top:6px\"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class=\"progress\"><div class=\"bar\" style=\"width:${mPct}%\"></div></div></div><div class=\"section\"><h3>Relatório rápido</h3><div class=\"history-item\"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class=\"pill plus\">${weekly.total} pts</span></div><div class=\"history-item\"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class=\"pill reward\">${monthly.total} pts</span></div></div><div class=\"section\"><h3>Histórico</h3><div class=\"history\" id=\"history-${index}\"></div></div>`;container.appendChild(el);const photoInput=el.querySelector(`#photo-${index}`);photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});renderHistory(index, getReportRange())})}
 function undoRedeem(childIndex, historyIndex){
   const child = state.children[childIndex];
   if(!child) { showFeedback('Criança não encontrada'); return; }
@@ -221,7 +229,253 @@ function renderHistory(index, range){
     box.appendChild(div);
   });
 }
-function render(){renderRewards();renderChildren()}
+
+function goToPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  if(page==='home') renderHome();
+  else if(page==='rewards') renderRewardsPage();
+  else if(page==='activities') renderActivitiesPage();
+  else if(page==='goals') renderGoalsPage();
+  else if(page==='report') renderReportPage();
+}
+
+function renderHome(){
+  const container=document.getElementById('home');
+  const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);
+  container.innerHTML=`
+    <div style="max-width:1100px;margin:0 auto 12px;display:flex;gap:8px;align-items:center">
+      <label style="color:var(--muted);font-weight:700">Período:</label>
+      <select id="reportPeriod" onchange="renderHome()">
+        <option value="week">Semana</option>
+        <option value="month" selected>Mês</option>
+        <option value="all">Todo</option>
+        <option value="custom">Personalizado</option>
+      </select>
+      <input id="reportStart" type="datetime-local" style="display:none;max-width:220px" />
+      <input id="reportEnd" type="datetime-local" style="display:none;max-width:220px" />
+      <button id="applyRange" class="btn-outline" style="display:none" onclick="renderHome()">Aplicar</button>
+    </div>
+    <section class="card"><h2>Adicionar Filho</h2><div class="row"><input id="childName" type="text" placeholder="Nome" /><button class="btn-primary" onclick="addChild()">Adicionar</button></div></section>
+    <section id="children" class="grid"></section>
+  `;
+  renderChildren();
+  document.getElementById('reportPeriod')?.addEventListener('change',(ev)=>{
+    const v=ev.target.value;
+    const s=document.getElementById('reportStart');
+    const e=document.getElementById('reportEnd');
+    const b=document.getElementById('applyRange');
+    if(v==='custom'){
+      const nl=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,16);
+      s.style.display='inline-block';e.style.display='inline-block';b.style.display='inline-block';
+      if(!s.value)s.value=nl;if(!e.value)e.value=nl;
+    }else{s.style.display='none';e.style.display='none';b.style.display='none';}
+  });
+}
+
+function renderRewardsPage(){
+  const container=document.getElementById('rewards');
+  container.innerHTML=`
+    <div class="card">
+      <h2>Gerenciar Recompensas</h2>
+      <div class="row">
+        <input id="rewardTitle" type="text" placeholder="Nome da recompensa" />
+        <input id="rewardCost" type="number" placeholder="Custo em pontos" />
+        <button class="btn-primary" onclick="addReward()">Adicionar</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Recompensa</th><th>Custo</th><th>Ação</th></tr></thead>
+      <tbody id="rewardsTable"></tbody>
+    </table>
+  `;
+  const tbody=document.getElementById('rewardsTable');
+  tbody.innerHTML='';
+  state.rewards.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.title}</td><td class="pill reward">${r.cost} pts</td><td><button class="btn-danger" onclick="deleteReward(${i})">Remover</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteReward(index){
+  if(confirm(`Remover "${state.rewards[index].title}"?`)){
+    state.rewards.splice(index,1);
+    save();
+    renderRewardsPage();
+    showFeedback('Recompensa removida!');
+  }
+}
+
+function addReward(){
+  const title=document.getElementById('rewardTitle').value.trim();
+  const cost=parseInt(document.getElementById('rewardCost').value,10);
+  if(!title||isNaN(cost)||cost<=0){showFeedback('Preencha dados válidos');return;}
+  state.rewards.push({title,cost});
+  document.getElementById('rewardTitle').value='';
+  document.getElementById('rewardCost').value='';
+  save();
+  renderRewardsPage();
+  showFeedback('Recompensa adicionada!');
+}
+
+function renderActivitiesPage(){
+  const container=document.getElementById('activities');
+  if(!state.activities) state.activities=[];
+  container.innerHTML=`
+    <div class="card">
+      <h2>Gerenciar Atividades</h2>
+      <div class="row">
+        <input id="actTitle" type="text" placeholder="Nome da atividade" />
+        <input id="actPoints" type="number" placeholder="Pontos (+/-)" />
+        <button class="btn-primary" onclick="addActivity()">Adicionar</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Atividade</th><th>Pontos</th><th>Ação</th></tr></thead>
+      <tbody id="activitiesTable"></tbody>
+    </table>
+  `;
+  const tbody=document.getElementById('activitiesTable');
+  tbody.innerHTML='';
+  state.activities.forEach((a,i)=>{
+    const tr=document.createElement('tr');
+    const pillClass=a.points>=0?'plus':'minus';
+    const sign=a.points>=0?'+':'';
+    tr.innerHTML=`<td>${a.title}</td><td class="pill ${pillClass}">${sign}${a.points} pts</td><td><button class="btn-danger" onclick="deleteActivity(${i})">Remover</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function addActivity(){
+  const title=document.getElementById('actTitle').value.trim();
+  const points=parseInt(document.getElementById('actPoints').value,10);
+  if(!title||isNaN(points)||points===0){showFeedback('Preencha dados válidos');return;}
+  if(!state.activities)state.activities=[];
+  state.activities.push({title,points});
+  document.getElementById('actTitle').value='';
+  document.getElementById('actPoints').value='';
+  save();
+  renderActivitiesPage();
+  showFeedback('Atividade adicionada!');
+}
+
+function deleteActivity(index){
+  if(confirm(`Remover "${state.activities[index].title}"?`)){
+    state.activities.splice(index,1);
+    save();
+    renderActivitiesPage();
+    showFeedback('Atividade removida!');
+  }
+}
+
+function applyActivity(childIndex){
+  const select=document.getElementById(`actSel-${childIndex}`);
+  if(!select){showFeedback('Seletor de atividade não encontrado');return;}
+  const opt=(select.selectedOptions&&select.selectedOptions[0])||null;
+  if(!opt||opt.disabled||opt.value===''){showFeedback('Escolha uma atividade');return;}
+  let actIndex=Number(opt.value);
+  if(Number.isNaN(actIndex)){
+    const placeholderFirst=select.options[0]&&select.options[0].value==='';
+    actIndex=opt.index-(placeholderFirst?1:0);
+  }
+  const dateEl=document.getElementById(`act-date-${childIndex}`);
+  const isoAt=dateEl&&dateEl.value?dateEl.value:null;
+  const child=state.children[childIndex];
+  const activity=state.activities[actIndex];
+  if(!child||!activity){showFeedback('Erro ao aplicar atividade');return;}
+  const desc=activity.points>=0?`Atividade: ${activity.title}`:`Desconto: ${activity.title}`;
+  updatePoints(childIndex,activity.points,desc,isoAt);
+  select.value='';
+  showFeedback('Atividade aplicada!');
+}
+
+function renderGoalsPage(){
+  const container=document.getElementById('goals');
+  container.innerHTML='<h2>Metas por Criança</h2><div id="goalsContainer" class="grid"></div>';
+  const cont=document.getElementById('goalsContainer');
+  state.children.forEach((c,i)=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <h3>${c.name}</h3>
+      <div class="row">
+        <label style="color:var(--muted);font-size:.9rem">Semana (pts):</label>
+        <input id="goal-week-${i}" type="number" value="${c.goals.weekly}" style="flex:1" />
+      </div>
+      <div class="row">
+        <label style="color:var(--muted);font-size:.9rem">Mês (pts):</label>
+        <input id="goal-month-${i}" type="number" value="${c.goals.monthly}" style="flex:1" />
+      </div>
+      <button class="btn-primary" onclick="saveGoals(${i})">Salvar Metas</button>
+    `;
+    cont.appendChild(card);
+  });
+}
+
+function saveGoals(index){
+  const weekly=parseInt(document.getElementById(`goal-week-${index}`).value,10);
+  const monthly=parseInt(document.getElementById(`goal-month-${index}`).value,10);
+  if(isNaN(weekly)||isNaN(monthly)||weekly<=0||monthly<=0){showFeedback('Metas inválidas');return;}
+  state.children[index].goals={weekly,monthly};
+  save();
+  renderGoalsPage();
+  showFeedback('Metas atualizadas!');
+}
+
+function renderReportPage(){
+  const container=document.getElementById('report');
+  container.innerHTML=`
+    <div class="card">
+      <h2>Filtro de Relatório</h2>
+      <div class="row">
+        <select id="reportChild" onchange="renderReportPage()">
+          <option value="">Todas as crianças</option>${state.children.map((c,i)=>`<option value="${i}">${c.name}</option>`).join('')}
+        </select>
+        <select id="reportPeriodSel" onchange="renderReportPage()">
+          <option value="week">Semana</option>
+          <option value="month" selected>Mês</option>
+          <option value="all">Todo</option>
+        </select>
+      </div>
+    </div>
+    <div id="reportTable"></div>
+  `;
+  const childSel=document.getElementById('reportChild');
+  const childIdx=childSel?childSel.value:'';
+  const period=document.getElementById('reportPeriodSel').value;
+  const now=new Date();
+  let fromDate=period==='week'?startOfWeek(now):(period==='month'?startOfMonth(now):new Date(0));
+  let html='<table><thead><tr><th>Criança</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Pontos</th></tr></thead><tbody>';
+  if(childIdx===''){
+    state.children.forEach((c,ci)=>{
+      c.history.forEach(h=>{
+        const t=new Date(h.at).getTime();
+        if(t>=fromDate.getTime()){
+          const type=h.type===('plus')?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
+          html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
+        }
+      });
+    });
+  }else{
+    const c=state.children[parseInt(childIdx,10)];
+    if(c){
+      c.history.forEach(h=>{
+        const t=new Date(h.at).getTime();
+        if(t>=fromDate.getTime()){
+          const type=h.type==='plus'?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
+          html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
+        }
+      });
+    }
+  }
+  html+='</tbody></table>';
+  document.getElementById('reportTable').innerHTML=html;
+}
+
+function render(){goToPage('home');}
 load();render();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worker.js')}
 </script>

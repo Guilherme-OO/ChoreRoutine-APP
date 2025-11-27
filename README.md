@@ -29,6 +29,40 @@ Estrutura principal do `state`:
 
 ```
 {
+```markdown
+
+# Rotinas & Pontos (PWA) — v7
+
+Aplicativo PWA leve para controle de pontos, resgate de recompensas e registro de atividades para crianças. Projetado para funcionar offline e ser instalado como app na tela inicial.
+
+Principais características (v7)
+-----------------------------
+- Menu de navegação com páginas: `Home`, `Recompensas`, `Atividades`, `Metas`, `Relatório`.
+- Dashboard `Home` com cartões por criança (visualização de pontos, metas, histórico e ações rápidas).
+- Página `Recompensas` para gerenciar catálogo (adicionar/remover).
+- Página `Atividades` para cadastrar tarefas com pontos (agora aceitam valores positivos e negativos).
+- Seletor de atividades nos cartões das crianças (aplicar atividade diretamente, como o seletor de recompensas).
+- Página `Metas` para setar metas semanais e mensais por criança.
+- Página `Relatório` com extrato filtrável por criança e período.
+- Suporte a registro de data/hora para cada ação via `datetime-local` (permite inserir eventos no passado).
+- Funciona offline via Service Worker (caches versionados — observe que o SW usa chaves com `v6`).
+
+Arquitetura e principais arquivos
+--------------------------------
+- `index.html` — aplicação single-file; contém toda a lógica JavaScript embutida (renderização, armazenamento, UI e navegação entre páginas).
+- `service-worker.js` — service worker com estratégia:
+	- Network-first para requisições HTML
+	- Cache-first para assets estáticos
+	- Versionamento dos caches (nomes atuais incluem `v6`)
+- `manifest.json` e `icons/` — metadados PWA e imagens.
+
+Modelo de dados (localStorage)
+-----------------------------
+O estado da aplicação é salvo em `localStorage` na chave `pwa_points_state_v6`.
+Estrutura principal do `state` (atualizada):
+
+```
+{
   children: [
     {
       name: string,
@@ -40,89 +74,71 @@ Estrutura principal do `state`:
       ]
     }
   ],
-  rewards: [ { title: string, cost: number } ]
+  rewards: [ { title: string, cost: number } ],
+  activities?: [ { title: string, points: number } ]
 }
 ```
 
-Observações importantes sobre o histórico
------------------------------------------
-- Quando um resgate é feito, a entrada no histórico é criada com `type: 'reward'` e `delta` negativo (ex: -50).
-- Ao estornar um resgate, a função `undoRedeem(childIndex, historyIndex)`:
-	- soma o valor positivo equivalente aos pontos devolvidos no total do filho;
-	- marca a entrada original com `reversed = true`;
-	- adiciona uma nova entrada `type: 'reversal'` com `delta` positivo e descrição `Estorno: ...`.
-- O cálculo de relatórios foi ajustado para que o total de "Recompensas" mostre o valor líquido (reward + reversal = 0) — ou seja, estornos neutralizam o efeito do resgate no relatório rápido.
+Notas sobre `activities`:
+- `state.activities` armazena as atividades cadastradas (pontos podem ser positivos ou negativos).
+- Na `Home` cada cartão exibe um seletor `actSel-<index>` para aplicar rapidamente uma atividade à criança.
 
-Controle por período e filtro de histórico
------------------------------------------
-- Existe um seletor no topo (`Período`) com as opções: `Semana`, `Mês`, `Todo`, `Personalizado`.
-- `Personalizado` habilita dois campos `datetime-local` (início/fim) e um botão `Aplicar`.
-- A função `getReportRange()` calcula `{ from, to }` com base no seletor e nos inputs customizados.
-- `renderHistory(index, range)` agora filtra as entradas do histórico pelo intervalo (`from <= at <= to`) antes de renderizar.
-- O botão `Estornar` renderizado ao lado de um `reward` usa o índice global da entrada no array real de histórico (para que `undoRedeem(childIndex, historyIndex)` aja sobre a entrada correta, mesmo quando a lista exibida está filtrada).
+Histórico e estornos
+--------------------
+- Resgate de recompensa: `type: 'reward'` com `delta` negativo.
+- Estorno: `undoRedeem(childIndex, historyIndex)` marca o resgate original (`reversed = true`) e adiciona `type: 'reversal'` com `delta` positivo.
+- `periodSum` e funções de relatório contabilizam `reward` + `reversal` para apresentar valores líquidos.
+
+Navegação e páginas
+--------------------
+- `goToPage(page)` — alterna páginas e executa o renderizador específico.
+- Páginas e funções principais:
+	- `renderHome()` — monta o dashboard principal (cards das crianças, seletor de atividades e recompensas inline).
+	- `renderRewardsPage()` — gerencia recompensas (adicionar, remover).
+	- `renderActivitiesPage()` — gerencia atividades (agora permite negativos).
+	- `renderGoalsPage()` — configura metas por criança.
+	- `renderReportPage()` — extrato filtrável por criança e período.
 
 Datas e registro de eventos
 ---------------------------
-- Cada cartão tem `datetime-local` para ações (`date-<index>`) e para resgates (`redeem-date-<index>`).
-- Ao aplicar pontos (via `applyCustom`, `+10`, `-5` ou `Resgatar`), o valor do campo `datetime-local` é usado para gravar `at` como uma ISO string — permitindo histórico com datas passadas.
+- Cada ação (aplicar atividade, ajuste manual, resgate, estorno) pode usar um campo `datetime-local` para gravar `at` com uma ISO string.
 
-Funcionalidades técnicas (implementação)
---------------------------------------
-- `renderChildren()` — gera o HTML dos cartões das crianças dinamicamente e exibe um resumo rápido por período (semana/mês) e o histórico filtrado pela seleção atual.
-- `redeemReward(childIndex)` — lê a opção selecionada (com fallback caso `value` não seja um número) e aplica o custo; aceita um `redeem-date` opcional.
-- `undoRedeem(childIndex, historyIndex)` — realiza o estorno: atualiza pontos, marca `reversed` e adiciona entrada `reversal` com `delta` positivo.
-- `periodSum(history, fromDate)` — calcula somatórios para relatório semanal/mensal e foi ajustada para considerar `reward` e `reversal`.
+Testes manuais recomendados (v7)
+-------------------------------
+1. Sirva o projeto por HTTP (não use `file://`) — ex: `python -m http.server` ou `npx http-server`.
+2. Abra `http://localhost:8000` (ou a porta escolhida) e navegue pelas abas.
+3. `Atividades`:
+	- Cadastre atividades com pontos positivos e negativos;
+	- Verifique tabela e remova entradas se necessário.
+4. `Home`:
+	- Adicione um filho e, no cartão, selecione uma atividade no dropdown e clique `Aplicar` (defina data se quiser);
+	- Teste aplicar uma recompensa (resgatar) e estornar depois.
+5. `Metas`:
+	- Ajuste metas semanais/mensais por criança e salve;
+	- Verifique barras de progresso no `Home`.
+6. `Relatório`:
+	- Filtre por criança e por período (Semana/Mês/Todo) para ver o extrato.
+7. Offline: instalar PWA ou testar com devtools em modo offline para validar caches.
 
-Service Worker
---------------
-- Cache names:
-	- `pwa-cache-static-v6` (assets estáticos)
-	- `pwa-cache-html-v6` (HTML cache)
-- Estratégia resumida:
-	- Requisições de navegação/HTML: network-first, depois cache se offline.
-	- Assets em `ASSETS`: cache-first (atualizados via nova versão do SW).
-- Ao clicar em "Zerar dados" o app também limpa caches cujo nome contém `pwa-cache`.
-
-Testes manuais recomendados
---------------------------
-1. Abrir `index.html` no navegador (ou recarregar se já aberto).
-2. Adicionar um filho (`Adicionar`) e verificar cartão gerado.
-3. Conceder pontos com `+10` e confirmar histórico (use o campo de data para variar a data do evento).
-4. Adicionar recompensa no catálogo e resgatar:
-	- Selecionar a recompensa no `select` e clicar `Resgatar`;
-	- Validar que pontos foram deduzidos e histórico recebeu entrada `reward` com a data escolhida.
-5. Testar filtros de período:
-	- No topo, altere `Período` para `Semana`/`Mês`/`Todo` e observe o histórico filtrado;
-	- Escolha `Personalizado`, defina intervalo que inclua/exclua entradas e clique `Aplicar` para ver apenas as entradas naquele intervalo.
-6. Estornar o resgate:
-	- No histórico filtrado (ou `Todo`), clique em `Estornar` ao lado da entrada de resgate;
-	- Validar pontos restaurados, entrada `reversal` adicionada e resgate marcado como `(Estornado)`;
-	- Confirmar em `Relatório rápido` que o campo "Recompensas" mostra o valor líquido.
-7. Testar modo offline: instalar PWA ou abrir devtools → Offline e navegar pelo app para confirmar que recursos essenciais continuam funcionando.
-
-Changelog (v6)
---------------
-- Corrigido bug no botão "Resgatar" relacionado ao `select` e seus valores.
-- Implementado fallback mais robusto em `redeemReward` para ler o índice da opção corretamente.
-- Adicionado funcionalidade de `Estornar` (undoRedeem) que devolve pontos e registra reversão no histórico.
-- Ajustado `periodSum` para contabilizar estornos e apresentar relatórios líquidos.
-- Adicionado filtro de histórico por período e suporte a intervalos customizados (`getReportRange` + `renderHistory` filtrada).
-- Adicionado suporte a datas para ações via `datetime-local` (registro de eventos no passado).
-- Service Worker com versionamento `v6` (parcialmente para forçar atualização de cache).
+Changelog
+---------
+- v7: Adicionado menu e páginas: Home, Recompensas, Atividades, Metas, Relatório.
+- v7: Atividades agora aceitam pontos negativos e podem ser aplicadas rapidamente pelo cartão da criança.
+- v7: Seletor de atividades no `Home` (equivalente ao seletor de recompensas).
+- v6 -> v7: preservadas melhorias anteriores (estorno, datas, filtro por período).
 
 Próximos passos (opcionais)
 ---------------------------
-- Remover escapes extras no template das `<option>` em `renderChildren` (limpeza de código) — compatível mas opcional.
-- Refatorar para extração do JavaScript para arquivo separado (`app.js`) para facilitar testes e manutenção.
-- Converter handlers inline para delegação de eventos para melhorar testabilidade e separação de responsabilidades.
-- Adicionar testes automatizados (unitários para funções de cálculo e integração simples).
+- Remover escapes extras no template das `<option>` em `renderChildren` (limpeza de código).
+- Extrair JS para `app.js` para facilitar testes e manutenção.
+- Adicionar testes automatizados para cálculos e fluxos críticos.
 
 Como commitar e publicar (exemplo)
 ---------------------------------
 ```
 git init
 git add .
-git commit -m "v6: corrige resgatar, adiciona estorno, datas e filtro por período"
+git commit -m "v7: adiciona menu, páginas e suporte a atividades"
 # criar repositório remoto no GitHub e adicionar remote 'origin'
 git remote add origin https://github.com/<seu-usuario>/<seu-repo>.git
 git push -u origin main
@@ -135,5 +151,5 @@ Este repositório é intencionalmente minimalista e busca simplicidade ao funcio
 - mover o JS para módulos separados,
 - gerar um changelog mais formal e criar um commit com as alterações atuais.
 
-Arquivo atualizado automaticamente com mudanças e arquitetura em 25/11/2025.
+Arquivo atualizado automaticamente com mudanças e arquitetura em 26/11/2025.
 
