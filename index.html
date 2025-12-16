@@ -310,10 +310,23 @@
         function switchPage(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
+
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             event.target.closest('.nav-item').classList.add('active');
-            if (pageId === 'reportPage') renderReportChildren();
+
+            if (pageId === 'activitiesPage') {
+                renderActivities();
+            } else if (pageId === 'rewardsPage') {
+                renderRewards();
+            } else if (pageId === 'goalsPage') {
+                renderGoals();
+            } else if (pageId === 'reportPage') {
+                renderReportChildren();
+            } else if (pageId === 'homePage') {
+                renderHome();
+            }
         }
+
         
         function renderHome() {
             const container = document.getElementById('childrenContainer');
