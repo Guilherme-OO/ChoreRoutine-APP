@@ -243,7 +243,7 @@
 
     async function supabaseRequest(table, method = 'GET', data = null, id = null) {
         let url = `${SUPABASE_URL}/rest/v1/${table}`;
-        if (method === 'PATCH' && id) {
+        if ((method === 'PATCH' || method == 'DELETE') && id) {
             url += `?id=eq.${id}`;
         }
         const options = {
@@ -294,7 +294,27 @@
                 setSyncing(false);
             }
         }
-        
+        async function deleteChild(childId, childName) {
+            const confirmar = confirm(
+                `Tem certeza que deseja excluir a criança "${childName}"?\n\n` +
+                'Todos os lançamentos de pontos associados a ela também serão removidos.'
+            );
+            if (!confirmar) return;
+
+            try {
+                setSyncing(true);
+                await supabaseRequest('children', 'DELETE', null, childId);
+                await loadAllData();
+                renderHome();
+                alert('Criança excluída com sucesso.');
+                setSyncing(false);
+            } catch (error) {
+                console.error('Erro ao excluir criança:', error);
+                alert('Erro ao excluir. Tente novamente.');
+                setSyncing(false);
+            }
+        }
+
         function calculateChildPoints(childId) {
             return (state.history.filter(h => h.child_id === childId && !h.reversed) || []).reduce((sum, h) => sum + (h.delta || 0), 0);
         }
@@ -340,12 +360,21 @@
                     <div class="child-points">${child.points || 0}</div>
                     <div class="child-label">Pontos</div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
                     <button class="btn btn-secondary btn-full" onclick="openApplyActivityModal('${child.id}')">✅ Atividade</button>
                     <button class="btn btn-secondary btn-full" onclick="openApplyRewardModal('${child.id}')">🎁 Recompensa</button>
                 </div>
-                <button class="btn btn-secondary btn-full" onclick="openChildHistory('${child.id}', '${child.name}')">📜 Histórico</button>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                    <button class="btn btn-secondary btn-full" onclick="openChildHistory('${child.id}', '${child.name}')">📜 Histórico</button>
+                    <button class="btn btn-secondary btn-full" style="background:#f8d7da; color:#a30000;"
+                        onclick="deleteChild('${child.id}', '${child.name}')">
+                        🗑️ Excluir
+                    </button>
+                </div>
             `).join('');
+
         }
         
         function selectChild(childId) { state.selectedChildId = childId; }
