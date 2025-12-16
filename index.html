@@ -1,656 +1,632 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rotinas & Pontos</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <meta name="theme-color" content="#2563eb" />
-  <style>
-    :root { --bg:#0f172a; --card:#111827; --muted:#64748b; --primary:#2563eb; --text:#f8fafc; --accent:#22c55e; --danger:#ef4444; --warning:#f59e0b; }
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-    header{display:flex;align-items:center;gap:12px;padding:20px;border-bottom:1px solid #1f2937}
-    header img{width:40px;height:40px} header h1{margin:0;font-size:1.2rem}
-    header .spacer{flex:1}
-    header .ver{color:#94a3b8;font-size:.85rem}
-    nav{display:flex;gap:0;border-bottom:1px solid #1f2937;background:#0b1324;overflow-x:auto}
-    nav button{background:transparent;color:var(--text);border:none;border-bottom:3px solid transparent;border-radius:0;padding:12px 20px;cursor:pointer;white-space:nowrap;transition:all .2s}
-    nav button:hover{color:var(--primary)}
-    nav button.active{border-bottom-color:var(--primary);color:var(--primary)}
-    main{padding:20px;max-width:1100px;margin:0 auto}
-    .page{display:none}
-    .page.active{display:block}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
-    .card{background:var(--card);border:1px solid #1f2937;border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-    .card h2{margin:0 0 8px;font-size:1.1rem;display:flex;justify-content:space-between;align-items:center}
-    .points{font-weight:700;color:var(--warning)} .row{display:flex;gap:8px;margin-top:10px}
-    input,select{background:#0b1324;color:var(--text);border:1px solid #334155;border-radius:10px;padding:10px;flex:1}
-    button{border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
-    .btn-plus{background:var(--accent);color:#052e16} .btn-minus{background:var(--danger);color:#fff}
-    .btn-outline{background:transparent;color:var(--text);border:1px solid #334155} .btn-primary{background:var(--primary);color:#fff}
-    .btn-danger{background:var(--danger);color:#fff}
-    .section{margin-top:18px} .section h3{margin:0 0 8px;font-size:1rem;color:var(--muted)}
-    .history{max-height:160px;overflow:auto;border:1px dashed #334155;border-radius:10px;padding:10px}
-    .history-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted #1f2937;font-size:.92rem}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:700}
-    .pill.plus{background:#064e3b;color:#34d399} .pill.minus{background:#7f1d1d;color:#fca5a5} .pill.reward{background:#1e3a8a;color:#93c5fd}
-    .avatar{width:56px;height:56px;border-radius:50%;border:2px solid #334155;background:#0b1324;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .avatar img{width:100%;height:100%;object-fit:cover} .avatar span{color:#93c5fd;font-weight:800;font-size:1rem}
-    .progress{height:10px;background:#0b1324;border-radius:999px;overflow:hidden;border:1px solid #334155}
-    .bar{height:100%;background:linear-gradient(90deg,#22c55e,#2563eb)} .label{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
-    .feedback{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;padding:10px 18px;border-radius:8px;display:none;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,.3)}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    table thead{background:#0b1324}
-    table th,table td{padding:10px;text-align:left;border-bottom:1px solid #1f2937}
-    table button{padding:6px 10px;font-size:.85rem}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2d8fa3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ChoreRoutine">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%232d8fa3' width='192' height='192'/%3E%3Ctext x='96' y='110' font-size='80' fill='white' text-anchor='middle' font-family='system-ui'%3E⭐%3C/text%3E%3C/svg%3E">
+    <title>ChoreRoutine - Rotinas & Pontos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2d8fa3; --primary-light: #41b3c9; --primary-dark: #1f6276;
+            --success: #27ae60; --danger: #e74c3c; --warning: #f39c12;
+            --background: #f5f5f5; --surface: #ffffff; --text: #333; --text-light: #666;
+            --border: #ddd; --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background); color: var(--text); line-height: 1.6;
+            padding-bottom: 100px; overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white; padding: 20px; padding-top: max(20px, calc(env(safe-area-inset-top) + 10px));
+            text-align: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 90;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.9; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .page { display: none; animation: fadeIn 0.3s ease-in; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .card-header { font-weight: 600; margin-bottom: 12px; color: var(--primary); }
+        .btn {
+            padding: 12px 20px; border: none; border-radius: var(--radius); font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex;
+            align-items: center; gap: 8px; text-decoration: none;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(45, 143, 163, 0.3); }
+        .btn-secondary { background: #f0f0f0; color: var(--text); }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-full { width: 100%; justify-content: center; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-family: inherit; font-size: 14px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(45, 143, 163, 0.1); }
+        .child-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white; padding: 20px; border-radius: var(--radius); margin-bottom: 16px;
+            box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s ease;
+        }
+        .child-card:hover { transform: translateY(-4px); }
+        .child-name { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+        .child-points { font-size: 32px; font-weight: 700; margin-bottom: 5px; }
+        .child-label { font-size: 12px; opacity: 0.9; }
+        .item {
+            background: var(--surface); padding: 14px; border-radius: var(--radius); margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 4px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .item-content { flex: 1; }
+        .item-name { font-weight: 600; margin-bottom: 4px; }
+        .item-value { font-weight: 700; font-size: 16px; color: var(--primary); min-width: 50px; text-align: right; }
+        .item-value.positive { color: var(--success); }
+        .item-value.negative { color: var(--danger); }
+        .history-item {
+            background: var(--surface); padding: 12px; border-radius: var(--radius); margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 4px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .history-content { flex: 1; }
+        .history-description { font-weight: 500; margin-bottom: 2px; font-size: 14px; }
+        .history-date { font-size: 12px; color: var(--text-light); }
+        .history-delta { font-weight: 700; font-size: 14px; padding: 6px 10px; border-radius: 8px; min-width: 60px; text-align: center; }
+        .history-delta.positive { background: rgba(39, 174, 96, 0.1); color: var(--success); }
+        .history-delta.negative { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        .navbar {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom); z-index: 99; box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-item {
+            flex: 1; padding: 12px; text-align: center; cursor: pointer; border: none;
+            background: none; font-size: 12px; color: var(--text-light); transition: all 0.2s ease;
+            font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-item:hover { background: var(--background); }
+        .nav-icon { font-size: 20px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; }
+        .modal.active { display: flex; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-content {
+            background: var(--surface); width: 100%; border-radius: var(--radius) var(--radius) 0 0;
+            padding: 24px; padding-top: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--primary); }
+        .modal-close { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .sync-status { position: fixed; top: 0; left: 0; right: 0; padding: 8px; text-align: center; font-size: 12px; z-index: 89; background: var(--background); color: var(--text-light); display: none; padding-top: env(safe-area-inset-top); }
+        .sync-status.active { display: block; }
+        .sync-status.online { background: var(--success); color: white; }
+        .sync-status.offline { background: var(--warning); color: white; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; }
+        .tab-btn { padding: 8px 16px; border: none; background: #f0f0f0; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; transition: all 0.2s ease; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .stat-box { background: var(--surface); padding: 16px; border-radius: var(--radius); text-align: center; box-shadow: var(--shadow); }
+        .stat-value { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+    </style>
 </head>
 <body>
-  <header>
-    <img src="icons/icon-96.png" alt="Ícone" />
-    <h1>Rotinas & Pontos <span class="ver">v7</span></h1>
-    <div class="spacer"></div>
-    <button class="btn-outline" onclick="resetApp()">Zerar dados</button>
-  </header>
-  <nav>
-    <button class="nav-btn active" data-page="home" onclick="goToPage('home')">Home</button>
-    <button class="nav-btn" data-page="kids" onclick="goToPage('kids')">Filhos</button>
-    <button class="nav-btn" data-page="rewards" onclick="goToPage('rewards')">Recompensas</button>
-    <button class="nav-btn" data-page="activities" onclick="goToPage('activities')">Atividades</button>
-    <button class="nav-btn" data-page="goals" onclick="goToPage('goals')">Metas</button>
-    <button class="nav-btn" data-page="report" onclick="goToPage('report')">Relatório</button>
-  </nav>
-  <main>
-    <div id="home" class="page active"></div>
-    <div id="kids" class="page"></div>
-    <div id="rewards" class="page"></div>
-    <div id="activities" class="page"></div>
-    <div id="goals" class="page"></div>
-    <div id="report" class="page"></div>
-    <footer>Funciona offline. Adicione à tela inicial para usar como app.</footer>
-  </main>
-  <div id="feedback" class="feedback">Recompensa resgatada!</div>
-<script>
-const STORAGE_KEY='pwa_points_state_v6';
-let state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]};
-function load(){try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=JSON.parse(raw)}catch(e){}
-}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
-function showFeedback(msg){const fb=document.getElementById('feedback');fb.textContent=msg;fb.style.display='block';setTimeout(()=>fb.style.display='none',2000)}
-function resetApp(){localStorage.removeItem(STORAGE_KEY); if('caches' in window){caches.keys().then(keys=>keys.forEach(k=>{if(k.includes('pwa-cache')) caches.delete(k)}))} state={children:[],rewards:[{title:'Escolher filme',cost:50},{title:'30 min videogame',cost:40},{title:'Sorvete',cost:60}]}; render(); showFeedback('Dados zerados!')}
-function addChild(){const name=document.getElementById('childName').value.trim();if(!name)return;state.children.push({name,points:0,history:[],photo:null,goals:{weekly:100,monthly:400}});document.getElementById('childName').value='';save();render()}
-function addReward(){const title=document.getElementById('rewardTitle').value.trim();const cost=parseInt(document.getElementById('rewardCost').value,10);if(!title||isNaN(cost)||cost<=0){showFeedback('Preencha recompensa válida');return;}state.rewards.push({title,cost});document.getElementById('rewardTitle').value='';document.getElementById('rewardCost').value='';save();renderRewards();showFeedback('Recompensa adicionada!')}
-function updatePoints(index,delta,desc,isoAt){
-  const child = state.children[index];
-  child.points += delta;
-  // store dates as YYYY-MM-DD (no time)
-  const at = isoAt ? isoAt : new Date().toISOString().slice(0,10);
-  child.history.unshift({ type: delta>=0 ? 'plus' : 'minus', delta, desc: desc || (delta>=0 ? 'Boa tarefa' : 'Comportamento'), at });
-  save(); render();
-}
-function redeemReward(childIndex){
-  const select = document.getElementById(`rewardSel-${childIndex}`);
-  if(!select){ showFeedback('Seleção de recompensa não encontrada'); return; }
-
-  const opt = (select.selectedOptions && select.selectedOptions[0]) || null;
-  if(!opt || opt.disabled || opt.value === ''){ showFeedback('Escolha uma recompensa'); return; }
-
-  let rewardIndex = Number(opt.value);
-  if(Number.isNaN(rewardIndex)){
-    // fallback: compute index from option position (first option is placeholder)
-    const placeholderFirst = select.options[0] && select.options[0].value === '';
-    rewardIndex = opt.index - (placeholderFirst ? 1 : 0);
-  }
-
-  const dateEl = document.getElementById(`redeem-date-${childIndex}`);
-  const isoAt = dateEl && dateEl.value ? dateEl.value : null;
-
-  const child = state.children[childIndex];
-  const reward = state.rewards[rewardIndex];
-  if(!child || !reward){ showFeedback('Erro ao resgatar'); return; }
-  if(child.points < reward.cost){ showFeedback('Pontos insuficientes'); return; }
-
-  child.points -= reward.cost;
-  const at = isoAt ? isoAt : new Date().toISOString().slice(0,10);
-  child.history.unshift({ type: 'reward', delta: -reward.cost, desc: `Resgatou: ${reward.title}`, at });
-  save(); render(); showFeedback('Recompensa resgatada!')
-}
-function formatDate(at){
-  if(!at) return '';
-  // support both full ISO datetimes and simple YYYY-MM-DD
-  try{
-    if(at.includes('T')){
-      return new Date(at).toLocaleDateString('pt-BR');
-    }
-    return new Date(at + 'T00:00:00').toLocaleDateString('pt-BR');
-  }catch(e){return String(at)}
-}
-function startOfWeek(date){const d=new Date(date);const day=d.getDay();const diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d}
-function startOfMonth(date){const d=new Date(date);d.setDate(1);d.setHours(0,0,0,0);return d}
-function periodSum(history,fromDate){
-  // normalize to local YYYY-MM-DD strings for comparison
-  const pad = n => String(n).padStart(2,'0');
-  const toLocalDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const fromStr = toLocalDate(fromDate);
-  let total = 0, plus = 0, minus = 0, rewards = 0;
-  history.forEach(h => {
-    const hDateStr = (h.at && h.at.includes('T')) ? toLocalDate(new Date(h.at)) : h.at;
-    if(hDateStr >= fromStr){
-      total += h.delta;
-      if (h.type === 'plus') plus += h.delta;
-      if (h.type === 'minus') minus += h.delta;
-      if (h.type === 'reward') rewards += h.delta;
-      if (h.type === 'activity') total += 0; // activities already counted in total
-      if (h.type === 'reversal') rewards += h.delta;
-    }
-  });
-  return { total, plus, minus, rewards };
-}
-
-function getReportRange(){
-  const period = document.getElementById('reportPeriod').value;
-  const now = new Date();
-  if(period === 'week'){
-    return { from: startOfWeek(now), to: now };
-  }
-  if(period === 'month'){
-    return { from: startOfMonth(now), to: now };
-  }
-  if(period === 'all'){
-    return { from: new Date(0), to: now };
-  }
-  // custom
-  const s = document.getElementById('reportStart').value;
-  const e = document.getElementById('reportEnd').value;
-  const from = s ? new Date(s + 'T00:00:00') : new Date(0);
-  const to = e ? new Date(e + 'T00:00:00') : now;
-  return { from, to };
-}
-
-// show/hide custom range controls
-document.addEventListener('change', (ev)=>{
-  if(ev.target && ev.target.id === 'reportPeriod'){
-    const v = ev.target.value;
-    const s = document.getElementById('reportStart');
-    const e = document.getElementById('reportEnd');
-    const b = document.getElementById('applyRange');
-    if(v === 'custom'){
-      const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
-      s.style.display = 'inline-block'; e.style.display = 'inline-block'; b.style.display = 'inline-block';
-      if(!s.value) s.value = nowLocal; if(!e.value) e.value = nowLocal;
-    } else { s.style.display='none'; e.style.display='none'; b.style.display='none'; }
-  }
-});
-function setPhoto(index,file){const reader=new FileReader();reader.onload=()=>{state.children[index].photo=reader.result;save();render()};reader.readAsDataURL(file)}
-function applyCustom(index){
-  const descEl = document.getElementById(`desc-${index}`);
-  const valEl = document.getElementById(`custom-${index}`);
-  const dateEl = document.getElementById(`date-${index}`);
-  const val = parseInt(valEl.value,10);
-  const desc = (descEl.value||'').trim();
-  const isoAt = dateEl && dateEl.value ? dateEl.value : null;
-  if(!val||val===0){ showFeedback('Informe pontos válidos'); return; }
-  updatePoints(index,val,desc||'Ajuste', isoAt);
-  descEl.value=''; valEl.value='';
-}
-function updateGoals(index){const weekly=parseInt(document.getElementById(`goal-weekly-${index}`).value,10);const monthly=parseInt(document.getElementById(`goal-monthly-${index}`).value,10);if(isNaN(weekly)||isNaN(monthly)){showFeedback('Metas inválidas');return;} state.children[index].goals={weekly,monthly}; save(); render(); showFeedback('Metas atualizadas!')}
-function renderRewards(){const container=document.getElementById('rewardsList');container.innerHTML='<h3>Recompensas</h3>';const list=document.createElement('div');state.rewards.forEach((r,i)=>{const item=document.createElement('div');item.className='history-item';item.innerHTML=`<span>${r.title}</span><span class="pill reward">${r.cost} pts</span>`;list.appendChild(item)});container.appendChild(list)}
-function pct(val,goal){return Math.max(0,Math.min(100,Math.round((goal?(val/goal*100):0))))}
-function renderChildren(){
-  const container=document.getElementById('children');
-  container.innerHTML='';
-  const now=new Date();
-  const wStart=startOfWeek(now);
-  const mStart=startOfMonth(now);
-  state.children.forEach((c,index)=>{
-    const weekly=periodSum(c.history,wStart);
-    const monthly=periodSum(c.history,mStart);
-    const wPct=pct(weekly.total,c.goals.weekly);
-    const mPct=pct(monthly.total,c.goals.monthly);
-    const el=document.createElement('div');
-    el.className='card';
-    const avatar=c.photo?`<div class="avatar"><img src="${c.photo}" alt="foto"/></div>`:`<div class="avatar"><span>${c.name.slice(0,1).toUpperCase()}</span></div>`;
-    const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
-    el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;">${avatar}<div style="flex:1"><h2 style="margin:0;display:flex;justify-content:space-between;align-items:center;"><span>${c.name}</span><span class="points">${c.points} pts</span></h2><div class="row"><input id="photo-${index}" type="file" accept="image/*" style="display:none" /><button class="btn-outline" onclick="document.getElementById('photo-${index}').click()">Foto</button><button class="btn-plus" onclick="updatePoints(${index},10,'Boa tarefa', document.getElementById('date-${index}').value)">+10</button><button class="btn-minus" onclick="updatePoints(${index},-5,'Comportamento ruim', document.getElementById('date-${index}').value)">-5</button></div></div></div><div class="row"><input id="desc-${index}" type="text" placeholder="Descrição" /><input id="custom-${index}" type="number" placeholder="Pontos (+/-)" /><input id="date-${index}" type="date" value="${nowLocal}" style="max-width:220px" /><button class="btn-outline" onclick="applyCustom(${index})">Aplicar</button></div><div class="row"><select id="actSel-${index}"><option value="" selected disabled>Selecione uma atividade</option>${(state.activities||[]).map((a,ai)=>`<option value=\"${ai}\">${a.title} (${a.points>=0?'+':''}${a.points} pts)</option>`).join('')}</select><input id="act-date-${index}" type="date" value="${nowLocal}" style="max-width:220px" /><button class="btn-outline" onclick="applyActivity(${index})">Aplicar</button></div><div class="row"><select id="rewardSel-${index}"><option value="" selected disabled>Selecione uma recompensa</option>${state.rewards.map((r,ri)=>`<option value=\"${ri}\">${r.title} (${r.cost} pts)</option>`).join('')}</select><input id="redeem-date-${index}" type="date" value="${nowLocal}" style="max-width:220px" /><button class="btn-primary" onclick="redeemReward(${index})">Resgatar</button></div><div class="section"><h3>Metas</h3><div class="row"><input id="goal-weekly-${index}" type="number" value="${c.goals.weekly}" /><input id="goal-monthly-${index}" type="number" value="${c.goals.monthly}" /><button class="btn-outline" onclick="updateGoals(${index})">Salvar metas</button></div><div class="label"><span>Semana</span><span>${weekly.total} / ${c.goals.weekly} pts</span></div><div class="progress"><div class="bar" style="width:${wPct}%"></div></div><div class="label" style="margin-top:6px"><span>Mês</span><span>${monthly.total} / ${c.goals.monthly} pts</span></div><div class="progress"><div class="bar" style="width:${mPct}%"></div></div></div><div class="section"><h3>Relatório rápido</h3><div class="history-item"><span>Semana: +${weekly.plus} / ${weekly.minus} / Recompensas ${weekly.rewards}</span><span class="pill plus">${weekly.total} pts</span></div><div class="history-item"><span>Mês: +${monthly.plus} / ${monthly.minus} / Recompensas ${monthly.rewards}</span><span class="pill reward">${monthly.total} pts</span></div></div><div class="section"><h3>Histórico</h3><div class="history" id="history-${index}"></div></div>`;
-    container.appendChild(el);
-    const photoInput=el.querySelector(`#photo-${index}`);
-    photoInput.addEventListener('change',(ev)=>{const f=ev.target.files&&ev.target.files[0];if(f)setPhoto(index,f)});
-    renderHistory(index, getReportRange());
-  });
-}
-function undoRedeem(childIndex, historyIndex){
-  const child = state.children[childIndex];
-  if(!child) { showFeedback('Criança não encontrada'); return; }
-  const item = child.history[historyIndex];
-  if(!item) { showFeedback('Entrada não encontrada'); return; }
-  if(item.type !== 'reward'){ showFeedback('Somente resgates podem ser estornados'); return; }
-  if(item.reversed){ showFeedback('Resgate já estornado'); return; }
-
-  const refund = -item.delta;
-  child.points += refund;
-  item.reversed = true;
-  child.history.unshift({ type: 'reversal', delta: refund, desc: `Estorno: ${item.desc}`, at: new Date().toISOString().slice(0,10) });
-  save(); render(); showFeedback('Resgate estornado!');
-}
-
-function undoActivity(childIndex, historyIndex){
-  const child = state.children[childIndex];
-  if(!child) { showFeedback('Criança não encontrada'); return; }
-  const item = child.history[historyIndex];
-  if(!item) { showFeedback('Entrada não encontrada'); return; }
-  // Support both new 'activity' type and legacy 'plus'/'minus' entries marked as activities
-  const isActivity = item.type === 'activity' || ((item.type === 'plus' || item.type === 'minus') && item.desc && (item.desc.includes('Atividade:') || item.desc.includes('Desconto:')));
-  if(!isActivity){ showFeedback('Somente atividades podem ser estornadas'); return; }
-  if(item.reversed){ showFeedback('Atividade já estornada'); return; }
-
-  const refund = -item.delta;
-  child.points += refund;
-  item.reversed = true;
-  child.history.unshift({ type: 'reversal', delta: refund, desc: `Estorno: ${item.desc}`, at: new Date().toISOString().slice(0,10) });
-  save(); render(); showFeedback('Atividade estornada!');
-}
-
-function renderHistory(index, range){
-  if(!range) range = getReportRange();
-  const box = document.getElementById(`history-${index}`);
-  const itemsAll = state.children[index].history;
-  box.innerHTML = '';
-  const pad = n => String(n).padStart(2,'0');
-  const toLocalDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const fromStr = toLocalDate(range.from);
-  const toStr = toLocalDate(range.to);
-  const items = itemsAll.filter(h => {
-    let hDateStr = '';
-    if(!h || !h.at) return false;
-    if(h.at.includes('T')){
-      hDateStr = toLocalDate(new Date(h.at));
-    } else if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(h.at)){
-      hDateStr = h.at;
-    } else if(h.at.includes('/')){
-      // assume DD/MM/YYYY -> convert
-      const parts = h.at.split('/');
-      if(parts.length===3){ hDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
-    } else {
-      // fallback: try Date parse
-      try{ hDateStr = toLocalDate(new Date(h.at)); }catch(e){ hDateStr = h.at }
-    }
-    return hDateStr >= fromStr && hDateStr <= toStr;
-  });
-  items.forEach((it) => {
-    const div = document.createElement('div');
-    div.className = 'history-item';
-    // Determine pill class: for 'activity' type, use delta value; for others use type
-    let pillClass = 'minus';
-    if(it.type === 'reward') pillClass = 'reward';
-    else if(it.type === 'plus') pillClass = 'plus';
-    else if(it.type === 'reversal') pillClass = 'plus';
-    else if(it.type === 'activity') pillClass = it.delta >= 0 ? 'plus' : 'minus';
-    
-    const sign = it.delta > 0 ? '+' : '';
-    let rightHtml = `<span class=\"pill ${pillClass}\">${sign}${it.delta} pts</span>`;
-
-    if(it.type === 'reward'){
-      if(it.reversed){
-        rightHtml += ` <span class=\"pill\" style=\"margin-left:8px;font-weight:600;color:#94a3b8;\">(Estornado)</span>`;
-      } else {
-        const globalIndex = itemsAll.indexOf(it);
-        rightHtml += ` <button class=\"btn-outline\" onclick=\"undoRedeem(${index},${globalIndex})\">Estornar</button>`;
-      }
-    } else if(it.type === 'activity' || (it.type === 'plus' && it.desc && (it.desc.includes('Atividade:') || it.desc.includes('Desconto:'))) || (it.type === 'minus' && it.desc && (it.desc.includes('Atividade:') || it.desc.includes('Desconto:')))){
-      if(it.reversed){
-        rightHtml += ` <span class=\"pill\" style=\"margin-left:8px;font-weight:600;color:#94a3b8;\">(Estornado)</span>`;
-      } else {
-        const globalIndex = itemsAll.indexOf(it);
-        rightHtml += ` <button class=\"btn-outline\" onclick=\"undoActivity(${index},${globalIndex})\">Estornar</button>`;
-      }
-    }
-
-    div.innerHTML = `<span>${formatDate(it.at)} — ${it.desc}</span><span>${rightHtml}</span>`;
-    box.appendChild(div);
-  });
-}
-
-function goToPage(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById(page).classList.add('active');
-  document.querySelector(`[data-page="${page}"]`).classList.add('active');
-  if(page==='home') renderHome();
-  else if(page==='kids') renderKidsPage();
-  else if(page==='rewards') renderRewardsPage();
-  else if(page==='activities') renderActivitiesPage();
-  else if(page==='goals') renderGoalsPage();
-  else if(page==='report') renderReportPage();
-}
-
-function renderHome(){
-  const container=document.getElementById('home');
-  const nowLocal=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
-  container.innerHTML=`
-    <div style="max-width:1100px;margin:0 auto 12px;display:flex;gap:8px;align-items:center">
-      <label style="color:var(--muted);font-weight:700">Período:</label>
-      <select id="reportPeriod" onchange="renderHome()">
-        <option value="week">Semana</option>
-        <option value="month" selected>Mês</option>
-        <option value="all">Todo</option>
-        <option value="custom">Personalizado</option>
-      </select>
-      <input id="reportStart" type="date" style="display:none;max-width:220px" />
-      <input id="reportEnd" type="date" style="display:none;max-width:220px" />
-      <button id="applyRange" class="btn-outline" style="display:none" onclick="renderHome()">Aplicar</button>
+    <div class="sync-status" id="syncStatus"></div>
+    <div class="header">
+        <h1>⭐ ChoreRoutine</h1>
+        <p>Rotinas & Pontos</p>
     </div>
-    <section id="children" class="grid"></section>
-  `;
-  renderChildren();
-  document.getElementById('reportPeriod')?.addEventListener('change',(ev)=>{
-    const v=ev.target.value;
-    const s=document.getElementById('reportStart');
-    const e=document.getElementById('reportEnd');
-    const b=document.getElementById('applyRange');
-      if(v==='custom'){
-      const nl=(new Date(Date.now()-(new Date()).getTimezoneOffset()*60000)).toISOString().slice(0,10);
-      s.style.display='inline-block';e.style.display='inline-block';b.style.display='inline-block';
-      if(!s.value)s.value=nl;if(!e.value)e.value=nl;
-    }else{s.style.display='none';e.style.display='none';b.style.display='none';}
-  });
-}
-
-function renderRewardsPage(){
-  const container=document.getElementById('rewards');
-  container.innerHTML=`
-    <div class="card">
-      <h2>Gerenciar Recompensas</h2>
-      <div class="row">
-        <input id="rewardTitle" type="text" placeholder="Nome da recompensa" />
-        <input id="rewardCost" type="number" placeholder="Custo em pontos" />
-        <button class="btn-primary" onclick="addReward()">Adicionar</button>
-      </div>
+    <div class="container">
+        <div class="page active" id="homePage">
+            <div id="childrenContainer"></div>
+            <button class="btn btn-primary btn-full" onclick="openModal('addChildModal')">➕ Adicionar Criança</button>
+        </div>
+        <div class="page" id="activitiesPage">
+            <div class="card"><div class="card-header">Atividades Cadastradas</div><div id="activitiesContainer"></div></div>
+            <button class="btn btn-primary btn-full" onclick="openModal('addActivityModal')">➕ Adicionar Atividade</button>
+        </div>
+        <div class="page" id="rewardsPage">
+            <div class="card"><div class="card-header">Recompensas Disponíveis</div><div id="rewardsContainer"></div></div>
+            <button class="btn btn-primary btn-full" onclick="openModal('addRewardModal')">➕ Adicionar Recompensa</button>
+        </div>
+        <div class="page" id="goalsPage">
+            <div class="card"><div class="card-header">Metas</div><div id="goalsContainer"></div></div>
+            <button class="btn btn-primary btn-full" onclick="openModal('addGoalModal')">➕ Adicionar Meta</button>
+        </div>
+        <div class="page" id="reportPage">
+            <div class="card"><div class="card-header">Selecione uma Criança</div><div id="reportChildrenContainer"></div></div>
+            <div id="reportContainer" style="display: none;">
+                <div class="tabs" id="reportTabs">
+                    <button class="tab-btn active" onclick="setReportPeriod('week')">Semana</button>
+                    <button class="tab-btn" onclick="setReportPeriod('month')">Mês</button>
+                    <button class="tab-btn" onclick="setReportPeriod('all')">Tudo</button>
+                </div>
+                <div class="stats">
+                    <div class="stat-box"><div class="stat-value" id="totalPoints">0</div><div class="stat-label">Total de Pontos</div></div>
+                    <div class="stat-box"><div class="stat-value" id="activitiesCount">0</div><div class="stat-label">Atividades</div></div>
+                </div>
+                <div class="card"><div class="card-header">Histórico</div><div id="reportHistoryContainer"></div></div>
+            </div>
+        </div>
     </div>
-    <table>
-      <thead><tr><th>Recompensa</th><th>Custo</th><th>Ação</th></tr></thead>
-      <tbody id="rewardsTable"></tbody>
-    </table>
-  `;
-  const tbody=document.getElementById('rewardsTable');
-  tbody.innerHTML='';
-  state.rewards.forEach((r,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${r.title}</td><td class="pill reward">${r.cost} pts</td><td><button class="btn-danger" onclick="deleteReward(${i})">Remover</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function deleteReward(index){
-  if(confirm(`Remover "${state.rewards[index].title}"?`)){
-    state.rewards.splice(index,1);
-    save();
-    renderRewardsPage();
-    showFeedback('Recompensa removida!');
-  }
-}
-
-function addReward(){
-  const title=document.getElementById('rewardTitle').value.trim();
-  const cost=parseInt(document.getElementById('rewardCost').value,10);
-  if(!title||isNaN(cost)||cost<=0){showFeedback('Preencha dados válidos');return;}
-  state.rewards.push({title,cost});
-  document.getElementById('rewardTitle').value='';
-  document.getElementById('rewardCost').value='';
-  save();
-  renderRewardsPage();
-  showFeedback('Recompensa adicionada!');
-}
-
-function renderKidsPage(){
-  const container = document.getElementById('kids');
-  container.innerHTML = `
-    <div class="card">
-      <h2>Cadastro de Filhos</h2>
-      <div class="row">
-        <input id="kidName" type="text" placeholder="Nome" />
-        <input id="kidPoints" type="number" placeholder="Pontos iniciais (opcional)" />
-      </div>
-      <div class="row">
-        <input id="kidGoalWeekly" type="number" placeholder="Meta semanal (pts)" />
-        <input id="kidGoalMonthly" type="number" placeholder="Meta mensal (pts)" />
-        <button class="btn-primary" onclick="createChildFromForm()">Criar</button>
-      </div>
+    <div class="modal" id="addChildModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('addChildModal')">✕</button>
+            <div class="modal-header">Adicionar Criança</div>
+            <form onsubmit="addChild(event)">
+                <div class="form-group"><label>Nome</label><input type="text" id="childName" required></div>
+                <button type="submit" class="btn btn-primary btn-full">Salvar</button>
+            </form>
+        </div>
     </div>
-    <table>
-      <thead><tr><th>Nome</th><th>Pontos</th><th>Meta S/ M</th><th>Ação</th></tr></thead>
-      <tbody id="kidsTable"></tbody>
-    </table>
-  `;
-  const tbody = document.getElementById('kidsTable');
-  tbody.innerHTML = '';
-  state.children.forEach((c, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${c.name}</td><td class="points">${c.points} pts</td><td>${c.goals.weekly} / ${c.goals.monthly}</td><td><button class="btn-danger" onclick="deleteChild(${i})">Remover</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function createChildFromForm(){
-  const name = document.getElementById('kidName').value.trim();
-  const pts = parseInt(document.getElementById('kidPoints').value,10);
-  const weekly = parseInt(document.getElementById('kidGoalWeekly').value,10);
-  const monthly = parseInt(document.getElementById('kidGoalMonthly').value,10);
-  if(!name){ showFeedback('Informe um nome'); return; }
-  const child = { name, points: isNaN(pts)?0:pts, history:[], photo:null, goals: { weekly: isNaN(weekly)?100:weekly, monthly: isNaN(monthly)?400:monthly } };
-  state.children.push(child);
-  document.getElementById('kidName').value=''; document.getElementById('kidPoints').value=''; document.getElementById('kidGoalWeekly').value=''; document.getElementById('kidGoalMonthly').value='';
-  save(); renderKidsPage(); showFeedback('Filho criado!');
-}
-
-function deleteChild(index){
-  if(!state.children[index]) return; 
-  if(confirm(`Remover criança "${state.children[index].name}"?`)){
-    state.children.splice(index,1);
-    save();
-    renderKidsPage();
-    showFeedback('Filho removido!');
-  }
-}
-
-function renderActivitiesPage(){
-  const container=document.getElementById('activities');
-  if(!state.activities) state.activities=[];
-  container.innerHTML=`
-    <div class="card">
-      <h2>Gerenciar Atividades</h2>
-      <div class="row">
-        <input id="actTitle" type="text" placeholder="Nome da atividade" />
-        <input id="actPoints" type="number" placeholder="Pontos (+/-)" />
-        <button class="btn-primary" onclick="addActivity()">Adicionar</button>
-      </div>
+    <div class="modal" id="addActivityModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('addActivityModal')">✕</button>
+            <div class="modal-header">Adicionar Atividade</div>
+            <form onsubmit="addActivity(event)">
+                <div class="form-group"><label>Nome da Atividade</label><input type="text" id="activityName" required></div>
+                <div class="form-group"><label>Pontos</label><input type="number" id="activityPoints" required></div>
+                <button type="submit" class="btn btn-primary btn-full">Salvar</button>
+            </form>
+        </div>
     </div>
-    <table>
-      <thead><tr><th>Atividade</th><th>Pontos</th><th>Ação</th></tr></thead>
-      <tbody id="activitiesTable"></tbody>
-    </table>
-  `;
-  const tbody=document.getElementById('activitiesTable');
-  tbody.innerHTML='';
-  state.activities.forEach((a,i)=>{
-    const tr=document.createElement('tr');
-    const pillClass=a.points>=0?'plus':'minus';
-    const sign=a.points>=0?'+':'';
-    tr.innerHTML=`<td>${a.title}</td><td class="pill ${pillClass}">${sign}${a.points} pts</td><td><button class="btn-danger" onclick="deleteActivity(${i})">Remover</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function addActivity(){
-  const title=document.getElementById('actTitle').value.trim();
-  const points=parseInt(document.getElementById('actPoints').value,10);
-  if(!title||isNaN(points)||points===0){showFeedback('Preencha dados válidos');return;}
-  if(!state.activities)state.activities=[];
-  state.activities.push({title,points});
-  document.getElementById('actTitle').value='';
-  document.getElementById('actPoints').value='';
-  save();
-  renderActivitiesPage();
-  showFeedback('Atividade adicionada!');
-}
-
-function deleteActivity(index){
-  if(confirm(`Remover "${state.activities[index].title}"?`)){
-    state.activities.splice(index,1);
-    save();
-    renderActivitiesPage();
-    showFeedback('Atividade removida!');
-  }
-}
-
-function applyActivity(childIndex){
-  const select=document.getElementById(`actSel-${childIndex}`);
-  if(!select){showFeedback('Seletor de atividade não encontrado');return;}
-  const opt=(select.selectedOptions&&select.selectedOptions[0])||null;
-  if(!opt||opt.disabled||opt.value===''){showFeedback('Escolha uma atividade');return;}
-  let actIndex=Number(opt.value);
-  if(Number.isNaN(actIndex)){
-    const placeholderFirst=select.options[0]&&select.options[0].value==='';
-    actIndex=opt.index-(placeholderFirst?1:0);
-  }
-  const dateEl=document.getElementById(`act-date-${childIndex}`);
-  const isoAt=dateEl&&dateEl.value?dateEl.value:null;
-  const child=state.children[childIndex];
-  const activity=state.activities[actIndex];
-  if(!child||!activity){showFeedback('Erro ao aplicar atividade');return;}
-  
-  child.points += activity.points;
-  const at = isoAt ? isoAt : new Date().toISOString().slice(0,10);
-  const desc = activity.points >= 0 ? `Atividade: ${activity.title}` : `Desconto: ${activity.title}`;
-  child.history.unshift({ type: 'activity', delta: activity.points, desc: desc, at });
-  save(); render();
-  select.value='';
-  showFeedback('Atividade aplicada!');
-}
-
-function renderGoalsPage(){
-  const container=document.getElementById('goals');
-  container.innerHTML='<h2>Metas por Criança</h2><div id="goalsContainer" class="grid"></div>';
-  const cont=document.getElementById('goalsContainer');
-  state.children.forEach((c,i)=>{
-    const card=document.createElement('div');
-    card.className='card';
-    card.innerHTML=`
-      <h3>${c.name}</h3>
-      <div class="row">
-        <label style="color:var(--muted);font-size:.9rem">Semana (pts):</label>
-        <input id="goal-week-${i}" type="number" value="${c.goals.weekly}" style="flex:1" />
-      </div>
-      <div class="row">
-        <label style="color:var(--muted);font-size:.9rem">Mês (pts):</label>
-        <input id="goal-month-${i}" type="number" value="${c.goals.monthly}" style="flex:1" />
-      </div>
-      <button class="btn-primary" onclick="saveGoals(${i})">Salvar Metas</button>
-    `;
-    cont.appendChild(card);
-  });
-}
-
-function saveGoals(index){
-  const weekly=parseInt(document.getElementById(`goal-week-${index}`).value,10);
-  const monthly=parseInt(document.getElementById(`goal-month-${index}`).value,10);
-  if(isNaN(weekly)||isNaN(monthly)||weekly<=0||monthly<=0){showFeedback('Metas inválidas');return;}
-  state.children[index].goals={weekly,monthly};
-  save();
-  renderGoalsPage();
-  showFeedback('Metas atualizadas!');
-}
-
-function renderReportPage(){
-  // preserve previous selections so switching child doesn't reset dates
-  const prevChild = document.getElementById('reportChild')?.value || '';
-  const prevStart = document.getElementById('reportStart')?.value || '';
-  const prevEnd = document.getElementById('reportEnd')?.value || '';
-  const container=document.getElementById('report');
-  container.innerHTML=`
-    <div class="card">
-      <h2>Filtro de Relatório</h2>
-      <div class="row">
-        <select id="reportChild"></select>
-        <input id="reportStart" type="date" style="max-width:240px" />
-        <input id="reportEnd" type="date" style="max-width:240px" />
-        <button id="applyReport" class="btn-outline">Aplicar filtro</button>
-      </div>
+    <div class="modal" id="addRewardModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('addRewardModal')">✕</button>
+            <div class="modal-header">Adicionar Recompensa</div>
+            <form onsubmit="addReward(event)">
+                <div class="form-group"><label>Nome da Recompensa</label><input type="text" id="rewardName" required></div>
+                <div class="form-group"><label>Custo (Pontos)</label><input type="number" id="rewardCost" required></div>
+                <button type="submit" class="btn btn-primary btn-full">Salvar</button>
+            </form>
+        </div>
     </div>
-    <div id="reportTable"></div>
-  `;
-  // preencher seletor de crianças de forma programática (mais robusto)
-  const childSel = document.getElementById('reportChild');
-  childSel.innerHTML = '<option value="">Todas as crianças</option>';
-  state.children.forEach((c,i)=>{
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = c.name;
-    if(String(i) === prevChild) opt.selected = true;
-    childSel.appendChild(opt);
-  });
-  const startEl = document.getElementById('reportStart');
-  const endEl = document.getElementById('reportEnd');
-  // set defaults: last 30 days (but preserve previous values if present)
-  const now = new Date();
-  const defaultStart = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30);
-  const toLocal = (d)=>new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  if(prevStart) startEl.value = prevStart; else startEl.value = toLocal(defaultStart);
-  if(prevEnd) endEl.value = prevEnd; else endEl.value = toLocal(now);
+    <div class="modal" id="addGoalModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('addGoalModal')">✕</button>
+            <div class="modal-header">Adicionar Meta</div>
+            <form onsubmit="addGoal(event)">
+                <div class="form-group"><label>Selecione uma Criança</label><select id="goalChildId" required><option value="">-- Escolha --</option></select></div>
+                <div class="form-group"><label>Descrição da Meta</label><input type="text" id="goalDescription" required></div>
+                <div class="form-group"><label>Pontos Necessários</label><input type="number" id="goalTargetPoints" required></div>
+                <button type="submit" class="btn btn-primary btn-full">Salvar</button>
+            </form>
+        </div>
+    </div>
+    <div class="modal" id="applyActivityModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('applyActivityModal')">✕</button>
+            <div class="modal-header">Aplicar Atividade</div>
+            <div id="applyActivityForm"></div>
+        </div>
+    </div>
+    <div class="modal" id="applyRewardModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('applyRewardModal')">✕</button>
+            <div class="modal-header">Resgatar Recompensa</div>
+            <div id="applyRewardForm"></div>
+        </div>
+    </div>
+    <div class="modal" id="childHistoryModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('childHistoryModal')">✕</button>
+            <div class="modal-header" id="historyModalTitle">Histórico</div>
+            <div id="historyContainer"></div>
+        </div>
+    </div>
+    <div class="navbar">
+        <button class="nav-item active" onclick="switchPage('homePage')"><span class="nav-icon">🏠</span><span>Home</span></button>
+        <button class="nav-item" onclick="switchPage('activitiesPage')"><span class="nav-icon">📋</span><span>Atividades</span></button>
+        <button class="nav-item" onclick="switchPage('rewardsPage')"><span class="nav-icon">🎁</span><span>Recompensas</span></button>
+        <button class="nav-item" onclick="switchPage('goalsPage')"><span class="nav-icon">🎯</span><span>Metas</span></button>
+        <button class="nav-item" onclick="switchPage('reportPage')"><span class="nav-icon">📊</span><span>Relatório</span></button>
+    </div>
+    <script>
+        const SUPABASE_URL = 'https://nwndhufwuhksggphxdao.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_H_F_v9oX8Hs2xiHEIinwrw_NUOe0eLN';
+        
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
 
-  // build table when user clicks Aplicar
-  function buildReportTable(){
-    const childIdx = childSel.value;
-    const fromStr = startEl.value || toLocal(defaultStart);
-    const toStr = endEl.value || toLocal(now);
-    const pad = n => String(n).padStart(2,'0');
-    const toLocalDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    let html='<table><thead><tr><th>Criança</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Pontos</th></tr></thead><tbody>';
-    if(childIdx===''){
-      state.children.forEach((c,ci)=>{
-        c.history.forEach(h=>{
-          let hDateStr='';
-          if(!h || !h.at) return;
-          if(h.at.includes('T')) hDateStr = toLocalDate(new Date(h.at));
-          else if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(h.at)) hDateStr = h.at;
-          else if(h.at.includes('/')){ const parts=h.at.split('/'); if(parts.length===3) hDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
-          else try{ hDateStr = toLocalDate(new Date(h.at)); }catch(e){ hDateStr = h.at }
-          if(hDateStr>=fromStr && hDateStr<=toStr){
-            const type=h.type===('plus')?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
-            html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
-          }
+        async function supabaseRequest(table, method = 'GET', data = null) {
+            const url = `${SUPABASE_URL}/rest/v1/${table}`;
+            const options = {
+                method: method,
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                }
+            };
+            if (data) options.body = JSON.stringify(data);
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error('Erro na requisição');
+            return await response.json();
+        }
+        
+        let state = {
+            children: [], activities: [], rewards: [], history: [], goals: [],
+            selectedChildId: null, reportPeriod: 'month', isOnline: navigator.onLine, isSyncing: false
+        };
+        
+        window.addEventListener('load', async () => {
+            await initializeApp();
         });
-      });
-    }else{
-      const c=state.children[parseInt(childIdx,10)];
-      if(c){
-        c.history.forEach(h=>{
-          let hDateStr='';
-          if(!h || !h.at) return;
-          if(h.at.includes('T')) hDateStr = toLocalDate(new Date(h.at));
-          else if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(h.at)) hDateStr = h.at;
-          else if(h.at.includes('/')){ const parts=h.at.split('/'); if(parts.length===3) hDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; }
-          else try{ hDateStr = toLocalDate(new Date(h.at)); }catch(e){ hDateStr = h.at }
-          if(hDateStr>=fromStr && hDateStr<=toStr){
-            const type=h.type==='plus'?'Adição':(h.type==='minus'?'Desconto':(h.type==='reward'?'Resgate':'Estorno'));
-            html+=`<tr><td>${c.name}</td><td>${formatDate(h.at)}</td><td>${h.desc}</td><td>${type}</td><td class="pill ${h.type}">${h.delta}</td></tr>`;
-          }
+        
+        async function initializeApp() {
+            await loadAllData();
+            renderHome();
+            setupPolling();
+        }
+        
+        async function loadAllData() {
+            try {
+                setSyncing(true);
+                state.children = await supabaseRequest('children') || [];
+                state.activities = await supabaseRequest('activities') || [];
+                state.rewards = await supabaseRequest('rewards') || [];
+                state.goals = await supabaseRequest('goals') || [];
+                state.history = await supabaseRequest('points_history') || [];
+                state.children.forEach(child => {
+                    child.points = calculateChildPoints(child.id);
+                });
+                populateGoalChildSelect();
+                setSyncing(false);
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                setSyncing(false);
+            }
+        }
+        
+        function calculateChildPoints(childId) {
+            return (state.history.filter(h => h.child_id === childId && !h.reversed) || []).reduce((sum, h) => sum + (h.delta || 0), 0);
+        }
+        
+        function setupPolling() {
+            setInterval(async () => {
+                if (!state.isSyncing && state.isOnline) {
+                    await loadAllData();
+                }
+            }, 3000);
+        }
+        
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+            if (pageId === 'reportPage') renderReportChildren();
+        }
+        
+        function renderHome() {
+            const container = document.getElementById('childrenContainer');
+            if (state.children.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">👶</div>Nenhuma criança cadastrada</div>';
+                return;
+            }
+            container.innerHTML = state.children.map(child => `
+                <div class="child-card" onclick="selectChild('${child.id}')">
+                    <div class="child-name">${child.name}</div>
+                    <div class="child-points">${child.points || 0}</div>
+                    <div class="child-label">Pontos</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                    <button class="btn btn-secondary btn-full" onclick="openApplyActivityModal('${child.id}')">✅ Atividade</button>
+                    <button class="btn btn-secondary btn-full" onclick="openApplyRewardModal('${child.id}')">🎁 Recompensa</button>
+                </div>
+                <button class="btn btn-secondary btn-full" onclick="openChildHistory('${child.id}', '${child.name}')">📜 Histórico</button>
+            `).join('');
+        }
+        
+        function selectChild(childId) { state.selectedChildId = childId; }
+        
+        function renderActivities() {
+            const container = document.getElementById('activitiesContainer');
+            if (state.activities.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Nenhuma atividade cadastrada</div>';
+                return;
+            }
+            container.innerHTML = state.activities.map(activity => `
+                <div class="item">
+                    <div class="item-content"><div class="item-name">${activity.name}</div></div>
+                    <div class="item-value ${activity.points > 0 ? 'positive' : 'negative'}">${activity.points > 0 ? '+' : ''}${activity.points}</div>
+                </div>
+            `).join('');
+        }
+        
+        async function addActivity(event) {
+            event.preventDefault();
+            try {
+                setSyncing(true);
+                await supabaseRequest('activities', 'POST', {
+                    name: document.getElementById('activityName').value,
+                    points: parseInt(document.getElementById('activityPoints').value)
+                });
+                document.getElementById('activityName').value = '';
+                document.getElementById('activityPoints').value = '';
+                closeModal('addActivityModal');
+                await loadAllData();
+                renderActivities();
+                setSyncing(false);
+            } catch (error) {
+                console.error('Erro:', error);
+                setSyncing(false);
+            }
+        }
+        
+        function renderRewards() {
+            const container = document.getElementById('rewardsContainer');
+            if (state.rewards.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎁</div>Nenhuma recompensa cadastrada</div>';
+                return;
+            }
+            container.innerHTML = state.rewards.map(reward => `
+                <div class="item">
+                    <div class="item-content"><div class="item-name">${reward.name}</div></div>
+                    <div class="item-value">${reward.cost} 💰</div>
+                </div>
+            `).join('');
+        }
+        
+        async function addReward(event) {
+            event.preventDefault();
+            try {
+                setSyncing(true);
+                await supabaseRequest('rewards', 'POST', {
+                    name: document.getElementById('rewardName').value,
+                    cost: parseInt(document.getElementById('rewardCost').value)
+                });
+                document.getElementById('rewardName').value = '';
+                document.getElementById('rewardCost').value = '';
+                closeModal('addRewardModal');
+                await loadAllData();
+                renderRewards();
+                setSyncing(false);
+            } catch (error) {
+                console.error('Erro:', error);
+                setSyncing(false);
+            }
+        }
+        
+        function renderGoals() {
+            const container = document.getElementById('goalsContainer');
+            if (state.goals.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div>Nenhuma meta cadastrada</div>';
+                return;
+            }
+            container.innerHTML = state.goals.map(goal => {
+                const child = state.children.find(c => c.id === goal.child_id);
+                const progress = child ? Math.min(100, (child.points / goal.target_points) * 100) : 0;
+                return `
+                    <div class="card">
+                        <div style="margin-bottom: 10px;"><strong>${child?.name}</strong> - ${goal.description}</div>
+                        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">${child?.points || 0} / ${goal.target_points} pontos</div>
+                        <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #2d8fa3, #41b3c9); height: 100%; width: ${progress}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function addGoal(event) {
+            event.preventDefault();
+            try {
+                setSyncing(true);
+                await supabaseRequest('goals', 'POST', {
+                    child_id: document.getElementById('goalChildId').value,
+                    description: document.getElementById('goalDescription').value,
+                    target_points: parseInt(document.getElementById('goalTargetPoints').value),
+                    achieved: false
+                });
+                document.getElementById('goalDescription').value = '';
+                document.getElementById('goalTargetPoints').value = '';
+                document.getElementById('goalChildId').value = '';
+                closeModal('addGoalModal');
+                await loadAllData();
+                renderGoals();
+                setSyncing(false);
+            } catch (error) {
+                console.error('Erro:', error);
+                setSyncing(false);
+            }
+        }
+        
+        function populateGoalChildSelect() {
+            const select = document.getElementById('goalChildId');
+            select.innerHTML = '<option value="">-- Escolha uma criança --</option>' + state.children.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+        
+        function openApplyActivityModal(childId) {
+            state.selectedChildId = childId;
+            const child = state.children.find(c => c.id === childId);
+            document.getElementById('applyActivityForm').innerHTML = `
+                <div class="card"><strong>${child.name}</strong> - Pontos atuais: <strong>${child.points || 0}</strong></div>
+                <div id="activitiesForApply">${state.activities.map(activity => `
+                    <button class="btn btn-secondary btn-full" onclick="applyActivity('${childId}', ${activity.points}, '${activity.name}')">
+                        ${activity.name} <strong>${activity.points > 0 ? '+' : ''}${activity.points}</strong>
+                    </button>
+                `).join('')}</div>
+            `;
+            openModal('applyActivityModal');
+        }
+        
+        async function applyActivity(childId, points, activityName) {
+            const today = new Date().toISOString().split('T')[0];
+            try {
+                await supabaseRequest('points_history', 'POST', {
+                    child_id: childId, type: 'activity', delta: points, date: today, description: activityName
+                });
+                closeModal('applyActivityModal');
+                await loadAllData();
+                renderHome();
+            } catch (error) {
+                console.error('Erro:', error);
+            }
+        }
+        
+        function openApplyRewardModal(childId) {
+            state.selectedChildId = childId;
+            const child = state.children.find(c => c.id === childId);
+            document.getElementById('applyRewardForm').innerHTML = `
+                <div class="card"><strong>${child.name}</strong> - Pontos atuais: <strong>${child.points || 0}</strong></div>
+                <div id="rewardsForApply">${state.rewards.map(reward => {
+                    const hasEnough = (child.points || 0) >= reward.cost;
+                    return `
+                        <button class="btn ${hasEnough ? 'btn-primary' : 'btn-secondary'} btn-full" onclick="applyReward('${childId}', ${reward.cost}, '${reward.name}')" ${!hasEnough ? 'disabled' : ''}>
+                            ${reward.name} - ${reward.cost} 💰 ${!hasEnough ? '❌' : ''}
+                        </button>
+                    `;
+                }).join('')}</div>
+            `;
+            openModal('applyRewardModal');
+        }
+        
+        async function applyReward(childId, cost, rewardName) {
+            const today = new Date().toISOString().split('T')[0];
+            try {
+                await supabaseRequest('points_history', 'POST', {
+                    child_id: childId, type: 'reward', delta: -cost, date: today, description: rewardName
+                });
+                closeModal('applyRewardModal');
+                await loadAllData();
+                renderHome();
+            } catch (error) {
+                console.error('Erro:', error);
+            }
+        }
+        
+        function openChildHistory(childId, childName) {
+            const historyItems = state.history.filter(h => h.child_id === childId && !h.reversed);
+            const container = document.getElementById('historyContainer');
+            document.getElementById('historyModalTitle').textContent = `Histórico - ${childName}`;
+            if (historyItems.length === 0) {
+                container.innerHTML = '<div class="empty-state">Sem histórico</div>';
+            } else {
+                container.innerHTML = historyItems.map(item => `
+                    <div class="history-item">
+                        <div class="history-content">
+                            <div class="history-description">${item.description}</div>
+                            <div class="history-date">${new Date(item.date).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div class="history-delta ${item.delta > 0 ? 'positive' : 'negative'}">${item.delta > 0 ? '+' : ''}${item.delta}</div>
+                    </div>
+                `).join('');
+            }
+            openModal('childHistoryModal');
+        }
+        
+        function renderReportChildren() {
+            const container = document.getElementById('reportChildrenContainer');
+            container.innerHTML = state.children.map(child => `
+                <button class="btn btn-primary btn-full" onclick="selectReportChild('${child.id}')">
+                    ${child.name} - ${child.points || 0} pontos
+                </button>
+            `).join('');
+        }
+        
+        function selectReportChild(childId) {
+            state.selectedChildId = childId;
+            renderReport();
+            document.getElementById('reportChildrenContainer').style.display = 'none';
+            document.getElementById('reportContainer').style.display = 'block';
+        }
+        
+        function setReportPeriod(period) {
+            state.reportPeriod = period;
+            document.querySelectorAll('#reportTabs .tab-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', (idx === 0 && period === 'week') || (idx === 1 && period === 'month') || (idx === 2 && period === 'all'));
+            });
+            renderReport();
+        }
+        
+        function renderReport() {
+            const child = state.children.find(c => c.id === state.selectedChildId);
+            if (!child) return;
+            let filteredHistory = state.history.filter(h => h.child_id === state.selectedChildId && !h.reversed);
+            const now = new Date();
+            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (state.reportPeriod === 'week') filteredHistory = filteredHistory.filter(h => new Date(h.date) >= startOfWeek);
+            else if (state.reportPeriod === 'month') filteredHistory = filteredHistory.filter(h => new Date(h.date) >= startOfMonth);
+            const totalPoints = filteredHistory.reduce((sum, h) => sum + h.delta, 0);
+            document.getElementById('totalPoints').textContent = totalPoints;
+            document.getElementById('activitiesCount').textContent = filteredHistory.length;
+            const historyContainer = document.getElementById('reportHistoryContainer');
+            if (filteredHistory.length === 0) {
+                historyContainer.innerHTML = '<div class="empty-state">Sem dados neste período</div>';
+            } else {
+                historyContainer.innerHTML = filteredHistory.map(item => `
+                    <div class="history-item">
+                        <div class="history-content">
+                            <div class="history-description">${item.description}</div>
+                            <div class="history-date">${new Date(item.date).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div class="history-delta ${item.delta > 0 ? 'positive' : 'negative'}">${item.delta > 0 ? '+' : ''}${item.delta}</div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        async function addChild(event) {
+            event.preventDefault();
+            try {
+                setSyncing(true);
+                const childName = document.getElementById('childName').value;
+                console.log('🟢 Adicionando criança:', childName);
+                await supabaseRequest('children', 'POST', { user_id: generateUUID(), name: childName });
+                document.getElementById('childName').value = '';
+                closeModal('addChildModal');
+                await loadAllData();
+                renderHome();
+                setSyncing(false);
+            } catch (error) {
+                console.error('❌ Erro:', error);
+                setSyncing(false);
+            }
+        }
+        
+        function setSyncing(value) {
+            state.isSyncing = value;
+            const status = document.getElementById('syncStatus');
+            if (state.isSyncing) {
+                status.textContent = '🔄 Sincronizando...';
+                status.classList.add('active');
+            } else {
+                status.classList.remove('active');
+            }
+        }
+        
+        window.addEventListener('online', async () => {
+            state.isOnline = true;
+            await loadAllData();
         });
-      }
-    }
-    html+='</tbody></table>';
-    document.getElementById('reportTable').innerHTML=html;
-  }
-
-  // wire apply button
-  document.getElementById('applyReport').addEventListener('click', buildReportTable);
-  // do initial build
-  buildReportTable();
-}
-
-function render(){goToPage('home');}
-load();render();
-if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worker.js')}
-</script>
+        
+        window.addEventListener('offline', () => {
+            state.isOnline = false;
+        });
+    </script>
 </body>
 </html>
