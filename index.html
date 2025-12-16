@@ -294,6 +294,27 @@
                 setSyncing(false);
             }
         }
+        async function deleteActivity(activityId, activityName) {
+            const confirmar = confirm(
+                `Tem certeza que deseja excluir a atividade "${activityName}"?\n\n` +
+                'Ela deixará de aparecer para lançamentos futuros.'
+            );
+            if (!confirmar) return;
+
+            try {
+                setSyncing(true);
+                await supabaseRequest('activities', 'DELETE', null, activityId);
+                await loadAllData();
+                renderActivities();
+                alert('Atividade excluída com sucesso.');
+                setSyncing(false);
+            } catch (error) {
+                console.error('Erro ao excluir atividade:', error);
+                alert('Erro ao excluir. Tente novamente.');
+                setSyncing(false);
+            }
+        }
+
         async function deleteChild(childId, childName) {
             const confirmar = confirm(
                 `Tem certeza que deseja excluir a criança "${childName}"?\n\n` +
@@ -387,10 +408,24 @@
             }
             container.innerHTML = state.activities.map(activity => `
                 <div class="item">
-                    <div class="item-content"><div class="item-name">${activity.name}</div></div>
-                    <div class="item-value ${activity.points > 0 ? 'positive' : 'negative'}">${activity.points > 0 ? '+' : ''}${activity.points}</div>
+                    <div class="item-content">
+                        <div class="item-name">${activity.name}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="item-value ${activity.points > 0 ? 'positive' : 'negative'}">
+                            ${activity.points > 0 ? '+' : ''}${activity.points}
+                        </div>
+                        <button
+                            class="btn btn-secondary"
+                            style="padding:4px 8px; font-size:11px; border-radius:6px; background:#f8d7da; color:#a30000;"
+                            onclick="deleteActivity('${activity.id}', '${activity.name}')"
+                        >
+                            🗑️
+                        </button>
+                    </div>
                 </div>
             `).join('');
+
         }
         
         async function addActivity(event) {
