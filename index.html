@@ -241,22 +241,25 @@
             });
         }
 
-        async function supabaseRequest(table, method = 'GET', data = null) {
-            const url = `${SUPABASE_URL}/rest/v1/${table}`;
-            const options = {
-                method: method,
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                }
-            };
-            if (data) options.body = JSON.stringify(data);
-            const response = await fetch(url, options);
-            if (!response.ok) throw new Error('Erro na requisição');
-            return await response.json();
+    async function supabaseRequest(table, method = 'GET', data = null, id = null) {
+        let url = `${SUPABASE_URL}/rest/v1/${table}`;
+        if (method === 'PATCH' && id) {
+            url += `?id=eq.${id}`;
         }
+        const options = {
+            method: method,
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+        };
+        if (data) options.body = JSON.stringify(data);
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error('Erro na requisição');
+        return await response.json();
+    }
         
         let state = {
             children: [], activities: [], rewards: [], history: [], goals: [],
@@ -523,13 +526,23 @@
                             <div class="history-description">${item.description}</div>
                             <div class="history-date">${new Date(item.date).toLocaleDateString('pt-BR')}</div>
                         </div>
-                        <div class="history-delta ${item.delta > 0 ? 'positive' : 'negative'}">${item.delta > 0 ? '+' : ''}${item.delta}</div>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                            <div class="history-delta ${item.delta > 0 ? 'positive' : 'negative'}">
+                                ${item.delta > 0 ? '+' : ''}${item.delta}
+                            </div>
+                            <button
+                                class="btn btn-secondary"
+                                style="padding:4px 8px; font-size:11px; border-radius:6px;"
+                                onclick="reverseHistoryEntry('${item.id}')"
+                            >
+                                Estornar
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
             openModal('childHistoryModal');
-        }
-        
+        }       
         function renderReportChildren() {
             const container = document.getElementById('reportChildrenContainer');
             container.innerHTML = state.children.map(child => `
@@ -538,7 +551,33 @@
                 </button>
             `).join('');
         }
-        
+        async function reverseHistoryEntry(historyId) {
+            const confirmar = confirm('Tem certeza que deseja estornar este lançamento? Os pontos serão recalculados.');
+            if (!confirmar) return;
+
+            try {
+                setSyncing(true);
+                await supabaseRequest('points_history', 'PATCH', { reversed: true }, historyId);
+
+                // Recarrega dados e UI
+                await loadAllData();
+                renderHome();
+
+                const child = state.children.find(c => c.id === state.selectedChildId);
+                if (child) {
+                    openChildHistory(child.id, child.name);
+                }
+
+                setSyncing(false);
+                alert('Lançamento estornado com sucesso!');
+                // Refresh completo opcional:
+                location.reload();
+            } catch (error) {
+                console.error('Erro ao estornar lançamento:', error);
+                alert('Erro ao estornar. Tente novamente.');
+                setSyncing(false);
+            }
+        }
         function selectReportChild(childId) {
             state.selectedChildId = childId;
             renderReport();
